@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  role_id Int    @id @default(autoincrement())
+  name    String @unique @db.VarChar(30)
+
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  user_id       BigInt   @id @default(autoincrement())
+  role_id       Int
+  full_name     String   @db.VarChar(120)
+  email         String   @unique @db.VarChar(120)
+  password_hash String   @db.VarChar(255)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  role Role @relation(fields: [role_id], references: [role_id])
+
+  stock_movements  StockMovement[]
+  forecast_runs    ForecastRun[]
+  stock_thresholds StockThreshold[]
+  packagings       Packaging[]
+
+  @@index([role_id])
+  @@index([is_active])
+  @@map("users")
+}
+
+model Product {
+  product_id      BigInt   @id @default(autoincrement())
+  sku             String   @unique @db.VarChar(40)
+  name            String   @db.VarChar(120)
+  category        String   @db.VarChar(60)
+  unit_of_measure String   @db.VarChar(20)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+
+  packaging_id Int?
+packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id])
+
+  stock_movements  StockMovement[]
+  forecast_runs    ForecastRun[]
+  stock_thresholds StockThreshold[]
+
+  @@index([name])
+  @@index([category])
+  @@index([is_active])
+  @@map("products")
+}
+
+model Packaging {
+  packaging_id Int               @id @default(autoincrement())
+  name         String            @db.VarChar(60)
+  reference    String            @unique @db.VarChar(20)
+  category     PackagingCategory
+  height       Decimal           @db.Decimal(8, 2)
+  width        Decimal           @db.Decimal(8, 2)
+  length       Decimal           @db.Decimal(8, 2)
+  is_active    Boolean           @default(true)
+  created_by   BigInt
+  created_at   DateTime          @default(now())
+
+  user     User      @relation(fields: [created_by], references: [user_id])
+  products Product[]
+
+  @@index([category])
+  @@index([is_active])
+  @@map("packaging")
+}
+
+model InventoryLocation {
+  location_id Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(60)
+  description String? @db.VarChar(200)
+
+  stock_movements  StockMovement[]
+  stock_thresholds StockThreshold[]
+
+  @@map("inventory_locations")
+}
+
+model StockMovement {
+  movement_id   BigInt       @id @default(autoincrement())
+  product_id    BigInt
+  location_id   Int
+  movement_type MovementType
+  quantity      Int
+  movement_date DateTime     @default(now())
+  reference     String?      @db.VarChar(80)
+  notes         String?      @db.VarChar(200)
+  created_by    BigInt
+
+  product  Product           @relation(fields: [product_id], references: [product_id])
+  location InventoryLocation @relation(fields: [location_id], references: [location_id])
+  user     User              @relation(fields: [created_by], references: [user_id])
+
+  @@index([product_id])
+  @@index([location_id])
+  @@index([created_by])
+  @@index([movement_type, movement_date])
+  @@map("stock_movements")
+}
+
+model StockThreshold {
+  threshold_id Int      @id @default(autoincrement())
+  product_id   BigInt
+  location_id  Int?
+  min_quantity Int
+  is_active    Boolean  @default(true)
+  created_by   BigInt
+  created_at   DateTime @default(now())
+
+  product  Product            @relation(fields: [product_id], references: [product_id])
+  location InventoryLocation? @relation(fields: [location_id], references: [location_id])
+  user     User               @relation(fields: [created_by], references: [user_id])
+
+  @@index([product_id])
+  @@index([location_id])
+  @@index([is_active])
+  @@map("stock_thresholds")
+}
+
+model ForecastRun {
+  forecast_id        BigInt            @id @default(autoincrement())
+  product_id         BigInt
+  forecast_name      String            @db.VarChar(80)
+  date_from          DateTime          @db.Date
+  date_to            DateTime          @db.Date
+  period_granularity PeriodGranularity
+  method             ForecastMethod
+  horizon_periods    Int
+  adjustment_factor  Decimal           @default(0.000) @db.Decimal(6, 3)
+  created_by         BigInt
+  created_at         DateTime          @default(now())
+
+  product  Product          @relation(fields: [product_id], references: [product_id])
+  user     User             @relation(fields: [created_by], references: [user_id])
+  periods  ForecastPeriod[]
+
+  @@index([product_id, created_at])
+  @@index([created_by])
+  @@map("forecast_runs")
+}
+
+model ForecastPeriod {
+  forecast_period_id     BigInt   @id @default(autoincrement())
+  forecast_id            BigInt
+  period_start           DateTime @db.Date
+  period_end             DateTime @db.Date
+  demand_estimated       Int
+  availability_estimated Int
+
+  forecast_run ForecastRun @relation(fields: [forecast_id], references: [forecast_id], onDelete: Cascade)
+
+  @@index([forecast_id])
+  @@index([period_start, period_end])
+  @@map("forecast_periods")
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUST
+}
+
+enum PeriodGranularity {
+  DAY
+  WEEK
+  MONTH
+}
+
+enum ForecastMethod {
+  HISTORICAL_AVG
+  SIMPLE_TREND
+}
+
+enum PackagingCategory {
+  QUARTER_BOX
+  HALF_BOX
+  FULL_BOX
+}
