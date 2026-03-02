@@ -1,14 +1,9 @@
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient()
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Usuario simulado — luego lo reemplazamos con Prisma + MySQL
-const usuarioSimulado = {
-    id: 1,
-    email: 'admin@floracore.com',
-    // contraseña real: "admin123"
-    password: '$2b$10$mf6h0.wjASuxG9sKmLL19OZ.A.lAjjiIbUQseNBd23MD371kzIjna',
-    rol: 'admin'
-};
 
 const login = async (req, res) => {
     try {
@@ -19,20 +14,25 @@ const login = async (req, res) => {
             return res.status(400).json({ error: 'Email y contraseña son requeridos' });
         }
 
-        // 2. Buscar usuario (simulado por ahora)
-        if (email !== usuarioSimulado.email) {
-            return res.status(401).json({ error: 'Credenciales inválidas' });
+        // 2. Buscar usuario
+        const user = await prisma.user.findUnique(
+            { where: { email: email } }
+        )
+
+        if (!user) {
+            return res.status(401).json({ error: 'usuario invalido' });
         }
 
+
         // 3. Verificar contraseña
-        const passwordValida = await bcrypt.compare(password, usuarioSimulado.password);
+        const passwordValida = await bcrypt.compare(password, user.password_hash);
         if (!passwordValida) {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
         // 4. Generar token JWT
         const token = jwt.sign(
-            { id: usuarioSimulado.id, rol: usuarioSimulado.rol },
+            { id: user.user_id.toString(), rol: user.role_id.toString() },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN }
         );
@@ -41,9 +41,9 @@ const login = async (req, res) => {
             message: 'Login exitoso',
             token,
             usuario: {
-                id: usuarioSimulado.id,
+                id: user.user_id.toString(),
                 email,
-                rol: usuarioSimulado.rol
+                rol: user.role_id
             }
         });
 
