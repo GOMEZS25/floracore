@@ -95,4 +95,58 @@ const obtenerUsuario = async (req, res) => {
     }
 }
 
-module.exports = { crearUsuario, listarUsuarios, obtenerUsuario };
+
+const actualizarUsuario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = BigInt(id);
+        const { full_name, email, password, is_active, role_id } = req.body;
+
+        if (!full_name || !email) {
+            return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
+        }
+
+        const user = await prisma.user.findUnique({ where: { user_id: userId } });
+
+        if (!user) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        //Objeto que contiene los datos a actualizar
+        const data = {
+            full_name,
+            email,
+            is_active,
+            role_id,
+        }
+
+        if (password) {
+            data.password_hash = await bcrypt.hash(password, 10);
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { user_id: userId },
+            data: data,  //Objeto que contiene los datos a actualizar
+            select: {
+                user_id: true,
+                full_name: true,
+                email: true,
+                role_id: true,
+                is_active: true,
+                created_at: true
+            }
+        });
+
+        const updatedUserSerializado = {
+            ...updatedUser,
+            user_id: updatedUser.user_id.toString()
+        };
+
+        res.status(200).json(updatedUserSerializado);
+
+    } catch (error) {
+        console.error('Error al actualizar usuario:', error.message);
+        res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
+    }
+}
+module.exports = { crearUsuario, listarUsuarios, obtenerUsuario, actualizarUsuario };
