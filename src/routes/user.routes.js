@@ -2,7 +2,7 @@ const express = require('express');
 
 const router = express.Router();
 
-const { crearUsuario, listarUsuarios, obtenerUsuario } = require('../controllers/user.controller');
+const { crearUsuario, listarUsuarios, obtenerUsuario, actualizarUsuario } = require('../controllers/user.controller');
 
 const { verificarToken } = require('../middlewares/auth.middleware');
 
@@ -13,7 +13,9 @@ router.post('/', verificarToken, crearUsuario);
 router.get('/', verificarToken, listarUsuarios);
 
 //Listar usuaririos
-router.get("/:id", obtenerUsuario);
+router.get("/:id", verificarToken, obtenerUsuario);
 
+
+router.put("/:id", verificarToken, actualizarUsuario);
 // Exportar router
 module.exports = router;
