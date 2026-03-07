@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 
 const app = express();
 
@@ -12,10 +13,10 @@ app.use(express.json());
 
 // Rutas
 app.use('/api/auth', authRoutes);
-
+app.use('/api/users', userRoutes);
 // Ruta de prueba
 app.get('/', (req, res) => {
-    res.json({ message: 'API FloraCore funcionando ✅' });
+    res.json({ message: "API FloraCore funcionando" });
 });
 
 const PORT = process.env.PORT || 3001;
