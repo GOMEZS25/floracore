@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 const bcrypt = require('bcryptjs');
 
-
+//Crear usuario
 const crearUsuario = async (req, res) => {
     try {
         const { full_name, email, password, is_active, role_id } = req.body;
@@ -37,7 +37,7 @@ const crearUsuario = async (req, res) => {
     }
 }
 
-
+//Listar usuarios
 const listarUsuarios = async (req, res) => {
     try {
         const users = await prisma.user.findMany({
@@ -61,7 +61,7 @@ const listarUsuarios = async (req, res) => {
     }
 }
 
-
+//Obtener usuario
 const obtenerUsuario = async (req, res) => {
     try {
         const { id } = req.params;
@@ -95,7 +95,7 @@ const obtenerUsuario = async (req, res) => {
     }
 }
 
-
+//Actualizar usuario
 const actualizarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
