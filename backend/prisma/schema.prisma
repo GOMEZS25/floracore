@@ -41,22 +41,26 @@ model Product {
   product_id      BigInt   @id @default(autoincrement())
   sku             String   @unique @db.VarChar(40)
   name            String   @db.VarChar(120)
-  category        String   @db.VarChar(60)
+  category_id     BigInt
   unit_of_measure String   @db.VarChar(20)
   is_active       Boolean  @default(true)
   created_at      DateTime @default(now())
 
   packaging_id Int?
-packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id])
+  packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id], onDelete: Restrict)
+
+  category Category @relation(fields: [category_id], references: [category_id], onDelete: Restrict)
 
   stock_movements  StockMovement[]
   forecast_runs    ForecastRun[]
   stock_thresholds StockThreshold[]
 
   @@index([name])
-  @@index([category])
+  @@index([category_id])
   @@index([is_active])
   @@map("products")
+
+
 }
 
 model Packaging {
@@ -190,3 +194,20 @@ enum PackagingCategory {
   HALF_BOX
   FULL_BOX
 }
+
+model Category {
+  category_id BigInt   @id @default(autoincrement())
+  name        String   @unique @db.VarChar(60)
+  reference   String   @unique @db.VarChar(20)
+  is_active   Boolean  @default(true)
+  created_by  BigInt
+  created_at  DateTime @default(now())
+
+  products Product[]
+
+  @@index([name])
+  @@index([reference])
+  @@index([is_active])
+  @@map("categories")
+}
+

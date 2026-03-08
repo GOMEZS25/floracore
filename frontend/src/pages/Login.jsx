@@ -23,7 +23,7 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // Petición POST al endpoint de autenticación usando fetch
+            // Petición POST al endpoint de autenticación 
             const response = await fetch('http://localhost:3001/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -35,7 +35,7 @@ const Login = () => {
             const data = await response.json();
 
             if (!response.ok) {
-                // En caso de que la API devuelva un error (ej. credenciales inválidas)
+                // En caso de que la API devuelva un error 
                 throw new Error(data.message || 'Error al iniciar sesión');
             }
 

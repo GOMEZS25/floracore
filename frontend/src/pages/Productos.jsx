@@ -5,7 +5,7 @@ const Productos = () => {
         <div>
             <h1 className="page-title">Productos</h1>
             <p className="text-muted">
-                Gestión de catálogo de productos florícolas en construcción...
+                Gestión de catálogo
             </p>
 
             <div style={{
@@ -17,7 +17,7 @@ const Productos = () => {
                 textAlign: 'center'
             }}>
                 <h3 style={{ color: 'var(--text-muted)' }}>Módulo en Desarrollo</h3>
-                <p className="text-muted" style={{ marginTop: '0.5rem' }}>Próximamente podrás agregar, editar y listar los productos de la empresa.</p>
+                <p className="text-muted" style={{ marginTop: '0.5rem' }}>Próximamente disponible.</p>
             </div>
         </div>
     );
