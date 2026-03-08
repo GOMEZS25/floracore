@@ -7,6 +7,9 @@
     "dev": "nodemon src/app.js",
     "start": "node src/app.js"
   },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "keywords": [],
   "author": "Santiago Gómez",
   "license": "ISC",

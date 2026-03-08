@@ -14,7 +14,7 @@ const verificarToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ error: 'Token inválido' })
         }
-        req.user = user;
+        req.usuario = user;
         next();
     })
 
