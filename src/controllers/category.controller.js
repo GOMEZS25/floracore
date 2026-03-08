@@ -1,6 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
+const { serializeBigInt } = require('../utils/bigint.helper');
 
 //Crear categoria
 const crearCategoria = async (req, res) => {
@@ -41,13 +41,7 @@ const crearCategoria = async (req, res) => {
         const crearCategoria = await prisma.category.create({ data });
 
         //Serializar la respuesta
-        const crearCategoriaSerializado = {
-            ...crearCategoria,
-            category_id: crearCategoria.category_id.toString(),
-            created_by: crearCategoria.created_by.toString()
-        };
-
-        res.status(201).json(crearCategoriaSerializado);
+        res.status(201).json(serializeBigInt(crearCategoria));
 
     } catch (error) {
         console.error('Error al crear categoria:', error.message);
@@ -55,5 +49,28 @@ const crearCategoria = async (req, res) => {
     }
 }
 
+//Listar categorias
+const listarCategorias = async (req, res) => {
+    try {
 
-module.exports = { crearCategoria };
+        const categorias = await prisma.category.findMany({
+            select: {
+                category_id: true,
+                name: true,
+                reference: true,
+                created_by: true,
+                created_at: true,
+            }
+        });
+
+        //Serializar la respuesta
+        const categoriasSerializadas = categorias.map(serializeBigInt);
+        res.json(categoriasSerializadas);
+
+    } catch (error) {
+        console.error('Error al listar categorias:', error.message);
+        res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
+    }
+}
+
+module.exports = { crearCategoria, listarCategorias };

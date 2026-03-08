@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const bcrypt = require('bcryptjs');
+const { serializeBigInt } = require('../utils/bigint.helper');
 
 //Crear usuario
 const crearUsuario = async (req, res) => {
@@ -28,10 +29,16 @@ const crearUsuario = async (req, res) => {
 const listarUsuarios = async (req, res) => {
     try {
         const users = await prisma.user.findMany({
-            select: { user_id: true, full_name: true, email: true, role_id: true, is_active: true, created_at: true }
+            select: {
+                user_id: true,
+                full_name: true,
+                email: true,
+                role_id: true,
+                is_active: true,
+                created_at: true
+            }
         });
-        const usersSerializados = users.map(user => ({ ...user, user_id: user.user_id.toString() }));
-        res.json(usersSerializados);
+        res.json(serializeBigInt(users));
     } catch (error) {
         console.error('Error al listar usuarios:', error.message);
         res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
