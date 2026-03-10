@@ -129,4 +129,49 @@ const actualizarCategoria = async (req, res) => {
     }
 }
 
-module.exports = { crearCategoria, actualizarCategoria, listarCategorias };
+//Eliminar categoria
+const eliminarCategoria = async (req, res) => {
+    try {
+        const { id: categoryId } = req.params;
+
+        //validar que la categoria exista
+        const categoria = await prisma.category.findUnique({
+            where: {
+                category_id: BigInt(categoryId)
+            }
+        });
+
+        if (!categoria) {
+            return res.status(404).json({ mensaje: 'Categoria no encontrada' });
+        }
+
+        //Validar que la categoria no tenga productos
+        const productos = await prisma.product.findFirst({
+            where: {
+                category_id: BigInt(categoryId)
+            }
+        });
+
+        if (productos) {
+            return res.status(400).json({ mensaje: 'La categoria no puede ser eliminada porque tiene productos asociados' });
+        }
+
+
+        const eliminarCategoria = await prisma.category.delete({
+            where: {
+                category_id: BigInt(categoryId)
+            }
+        });
+
+        //Response
+        res.status(200).json({ mensaje: 'Categoria eliminada correctamente' });
+
+
+    } catch (error) {
+        console.error('Error al eliminar categoria:', error.message);
+        res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
+    }
+}
+
+
+module.exports = { crearCategoria, actualizarCategoria, listarCategorias, eliminarCategoria };
