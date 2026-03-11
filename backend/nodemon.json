@@ -1,0 +1,3 @@
+{
+    "dev": "nodemon --ignore node_modules --ignore prisma src/app.js"
+}

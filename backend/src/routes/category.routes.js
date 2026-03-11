@@ -3,13 +3,22 @@ const express = require('express');
 const router = express.Router();
 
 //Importar controladores
-const { crearCategoria } = require('../controllers/category.controller');
+const { crearCategoria, listarCategorias, actualizarCategoria, eliminarCategoria } = require('../controllers/category.controller');
 
 //Importar middleware
 const { verificarToken } = require('../middlewares/auth.middleware');
 
 //Crear categoria
 router.post('/', verificarToken, crearCategoria);
+
+//Listar categorias
+router.get('/', verificarToken, listarCategorias);
+
+//Actualizar categoria
+router.put('/:id', verificarToken, actualizarCategoria);
+
+//Eliminar categoria
+router.delete('/:id', verificarToken, eliminarCategoria);
 
 //Exportar router
 module.exports = router;
