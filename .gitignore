@@ -1,4 +1,9 @@
 node_modules/
 .env
+<<<<<<< HEAD
 backend/frontend
 frontend/node_modules
+=======
+dist/
+.DS_Store
+>>>>>>> d98f98d0fc60df6e431ed58ac8fd96ebe6a97171
