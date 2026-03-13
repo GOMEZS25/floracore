@@ -10,27 +10,24 @@ datasource db {
 model Role {
   role_id Int    @id @default(autoincrement())
   name    String @unique @db.VarChar(30)
-
-  users User[]
+  users   User[]
 
   @@map("roles")
 }
 
 model User {
-  user_id       BigInt   @id @default(autoincrement())
-  role_id       Int
-  full_name     String   @db.VarChar(120)
-  email         String   @unique @db.VarChar(120)
-  password_hash String   @db.VarChar(255)
-  is_active     Boolean  @default(true)
-  created_at    DateTime @default(now())
-
-  role Role @relation(fields: [role_id], references: [role_id])
-
-  stock_movements  StockMovement[]
+  user_id          BigInt           @id @default(autoincrement())
+  role_id          Int
+  full_name        String           @db.VarChar(120)
+  email            String           @unique @db.VarChar(120)
+  password_hash    String           @db.VarChar(255)
+  is_active        Boolean          @default(true)
+  created_at       DateTime         @default(now())
   forecast_runs    ForecastRun[]
+  packagings       Packaging[]
+  stock_movements  StockMovement[]
   stock_thresholds StockThreshold[]
-  packagings Packaging[]
+  role             Role             @relation(fields: [role_id], references: [role_id])
 
   @@index([role_id])
   @@index([is_active])
@@ -59,8 +56,6 @@ model Product {
   @@index([category_id])
   @@index([is_active])
   @@map("products")
-
-
 }
 
 model Packaging {
@@ -74,20 +69,19 @@ model Packaging {
   is_active    Boolean           @default(true)
   created_by   BigInt
   created_at   DateTime          @default(now())
-
-  user     User      @relation(fields: [created_by], references: [user_id])
-  products Product[]
+  user         User              @relation(fields: [created_by], references: [user_id])
+  products     Product[]
 
   @@index([category])
   @@index([is_active])
+  @@index([created_by], map: "packaging_created_by_fkey")
   @@map("packaging")
 }
 
 model InventoryLocation {
-  location_id Int     @id @default(autoincrement())
-  name        String  @unique @db.VarChar(60)
-  description String? @db.VarChar(200)
-
+  location_id      Int              @id @default(autoincrement())
+  name             String           @unique @db.VarChar(60)
+  description      String?          @db.VarChar(200)
   stock_movements  StockMovement[]
   stock_thresholds StockThreshold[]
 
@@ -95,19 +89,18 @@ model InventoryLocation {
 }
 
 model StockMovement {
-  movement_id   BigInt       @id @default(autoincrement())
+  movement_id   BigInt            @id @default(autoincrement())
   product_id    BigInt
   location_id   Int
   movement_type MovementType
   quantity      Int
-  movement_date DateTime     @default(now())
-  reference     String?      @db.VarChar(80)
-  notes         String?      @db.VarChar(200)
+  movement_date DateTime          @default(now())
+  reference     String?           @db.VarChar(80)
+  notes         String?           @db.VarChar(200)
   created_by    BigInt
-
-  product  Product           @relation(fields: [product_id], references: [product_id])
-  location InventoryLocation @relation(fields: [location_id], references: [location_id])
-  user     User              @relation(fields: [created_by], references: [user_id])
+  user          User              @relation(fields: [created_by], references: [user_id])
+  location      InventoryLocation @relation(fields: [location_id], references: [location_id])
+  product       Product           @relation(fields: [product_id], references: [product_id])
 
   @@index([product_id])
   @@index([location_id])
@@ -117,21 +110,21 @@ model StockMovement {
 }
 
 model StockThreshold {
-  threshold_id Int      @id @default(autoincrement())
+  threshold_id Int                @id @default(autoincrement())
   product_id   BigInt
   location_id  Int?
   min_quantity Int
-  is_active    Boolean  @default(true)
+  is_active    Boolean            @default(true)
   created_by   BigInt
-  created_at   DateTime @default(now())
-
-  product  Product            @relation(fields: [product_id], references: [product_id])
-  location InventoryLocation? @relation(fields: [location_id], references: [location_id])
-  user     User               @relation(fields: [created_by], references: [user_id])
+  created_at   DateTime           @default(now())
+  user         User               @relation(fields: [created_by], references: [user_id])
+  location     InventoryLocation? @relation(fields: [location_id], references: [location_id])
+  product      Product            @relation(fields: [product_id], references: [product_id])
 
   @@index([product_id])
   @@index([location_id])
   @@index([is_active])
+  @@index([created_by], map: "stock_thresholds_created_by_fkey")
   @@map("stock_thresholds")
 }
 
@@ -147,10 +140,9 @@ model ForecastRun {
   adjustment_factor  Decimal           @default(0.000) @db.Decimal(6, 3)
   created_by         BigInt
   created_at         DateTime          @default(now())
-
-  product  Product          @relation(fields: [product_id], references: [product_id])
-  user     User             @relation(fields: [created_by], references: [user_id])
-  periods  ForecastPeriod[]
+  periods            ForecastPeriod[]
+  user               User              @relation(fields: [created_by], references: [user_id])
+  product            Product           @relation(fields: [product_id], references: [product_id])
 
   @@index([product_id, created_at])
   @@index([created_by])
@@ -158,18 +150,32 @@ model ForecastRun {
 }
 
 model ForecastPeriod {
-  forecast_period_id     BigInt   @id @default(autoincrement())
+  forecast_period_id     BigInt      @id @default(autoincrement())
   forecast_id            BigInt
-  period_start           DateTime @db.Date
-  period_end             DateTime @db.Date
+  period_start           DateTime    @db.Date
+  period_end             DateTime    @db.Date
   demand_estimated       Int
   availability_estimated Int
-
-  forecast_run ForecastRun @relation(fields: [forecast_id], references: [forecast_id], onDelete: Cascade)
+  forecast_run           ForecastRun @relation(fields: [forecast_id], references: [forecast_id], onDelete: Cascade)
 
   @@index([forecast_id])
   @@index([period_start, period_end])
   @@map("forecast_periods")
+}
+
+model Category {
+  category_id BigInt    @id @default(autoincrement())
+  name        String    @unique @db.VarChar(60)
+  reference   String    @unique @db.VarChar(20)
+  is_active   Boolean   @default(true)
+  created_by  BigInt
+  created_at  DateTime  @default(now())
+  products    Product[]
+
+  @@index([name])
+  @@index([reference])
+  @@index([is_active])
+  @@map("categories")
 }
 
 enum MovementType {
@@ -194,20 +200,3 @@ enum PackagingCategory {
   HALF_BOX
   FULL_BOX
 }
-
-model Category {
-  category_id BigInt   @id @default(autoincrement())
-  name        String   @unique @db.VarChar(60)
-  reference   String   @unique @db.VarChar(20)
-  is_active   Boolean  @default(true)
-  created_by  BigInt
-  created_at  DateTime @default(now())
-
-  products Product[]
-
-  @@index([name])
-  @@index([reference])
-  @@index([is_active])
-  @@map("categories")
-}
-
