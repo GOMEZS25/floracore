@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+// ROLES Y USUARIOS
+
+
 model Role {
   role_id Int    @id @default(autoincrement())
   name    String @unique @db.VarChar(30)
@@ -30,37 +34,32 @@ model User {
   stock_movements  StockMovement[]
   forecast_runs    ForecastRun[]
   stock_thresholds StockThreshold[]
-  packagings Packaging[]
+  packagings       Packaging[]
+  lotes            Lote[]
 
   @@index([role_id])
   @@index([is_active])
   @@map("users")
 }
 
-model Product {
-  product_id      BigInt   @id @default(autoincrement())
-  sku             String   @unique @db.VarChar(40)
-  name            String   @db.VarChar(120)
-  category_id     BigInt
-  unit_of_measure String   @db.VarChar(20)
-  is_active       Boolean  @default(true)
-  created_at      DateTime @default(now())
 
-  packaging_id Int?
-  packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id], onDelete: Restrict)
+// PRODUCTOS Y CATEGORÍAS
 
-  category Category @relation(fields: [category_id], references: [category_id], onDelete: Restrict)
 
-  stock_movements  StockMovement[]
-  forecast_runs    ForecastRun[]
-  stock_thresholds StockThreshold[]
+model Category {
+  category_id BigInt   @id @default(autoincrement())
+  name        String   @unique @db.VarChar(60)
+  reference   String   @unique @db.VarChar(20)
+  is_active   Boolean  @default(true)
+  created_by  BigInt
+  created_at  DateTime @default(now())
+
+  products Product[]
 
   @@index([name])
-  @@index([category_id])
+  @@index([reference])
   @@index([is_active])
-  @@map("products")
-
-
+  @@map("categories")
 }
 
 model Packaging {
@@ -83,38 +82,96 @@ model Packaging {
   @@map("packaging")
 }
 
+model Product {
+  product_id      BigInt   @id @default(autoincrement())
+  sku             String   @unique @db.VarChar(40)
+  name            String   @db.VarChar(120)
+  category_id     BigInt
+  unit_of_measure String   @db.VarChar(20)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+
+  packaging_id Int?
+  packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id], onDelete: Restrict)
+  category     Category   @relation(fields: [category_id], references: [category_id], onDelete: Restrict)
+
+  lotes            Lote[]
+  forecast_runs    ForecastRun[]
+  stock_thresholds StockThreshold[]
+
+  @@index([name])
+  @@index([category_id])
+  @@index([is_active])
+  @@map("products")
+}
+
+
+// INVENTARIO
+
+
 model InventoryLocation {
   location_id Int     @id @default(autoincrement())
   name        String  @unique @db.VarChar(60)
   description String? @db.VarChar(200)
 
-  stock_movements  StockMovement[]
+  lotes            Lote[]
   stock_thresholds StockThreshold[]
 
   @@map("inventory_locations")
 }
 
-model StockMovement {
-  movement_id   BigInt       @id @default(autoincrement())
-  product_id    BigInt
-  location_id   Int
-  movement_type MovementType
-  quantity      Int
-  movement_date DateTime     @default(now())
-  reference     String?      @db.VarChar(80)
-  notes         String?      @db.VarChar(200)
-  created_by    BigInt
+// Lote: representa cada ingreso físico de mercancía a una bodega
+model Lote {
+  lote_id              BigInt     @id @default(autoincrement())
+  numero_lote          String     @unique @db.VarChar(40)
+  product_id           BigInt
+  location_id          Int
+  cantidad_inicial     Decimal    @db.Decimal(10, 2)
+  cantidad_disponible  Decimal    @db.Decimal(10, 2)
+  cantidad_reservada   Decimal    @default(0) @db.Decimal(10, 2)
+  unidad_medida        String     @db.VarChar(20)  // tallos, cajas, ramos
+  estado               LoteEstado @default(DISPONIBLE)
+  fecha_ingreso        DateTime   @default(now())
+  zona_corte           String?    @db.VarChar(80)
+  notas                String?    @db.VarChar(200)
+  created_by           BigInt
+  created_at           DateTime   @default(now())
 
-  product  Product           @relation(fields: [product_id], references: [product_id])
-  location InventoryLocation @relation(fields: [location_id], references: [location_id])
+  product  Product           @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+  location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
   user     User              @relation(fields: [created_by], references: [user_id])
+
+  stock_movements StockMovement[]
 
   @@index([product_id])
   @@index([location_id])
+  @@index([estado])
+  @@index([fecha_ingreso])
+  @@map("lotes")
+}
+
+// Movimiento: historial de cada operación sobre un lote
+model StockMovement {
+  movement_id   BigInt       @id @default(autoincrement())
+  lote_id       BigInt
+  movement_type MovementType
+  quantity      Decimal      @db.Decimal(10, 2)
+  movement_date DateTime     @default(now())
+  notes         String?      @db.VarChar(200)
+  created_by    BigInt
+
+  lote Lote @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
+  user User @relation(fields: [created_by], references: [user_id])
+
+  @@index([lote_id])
   @@index([created_by])
   @@index([movement_type, movement_date])
   @@map("stock_movements")
 }
+
+
+// UMBRALES Y PROYECCIONES (RF4 / RF8)
+
 
 model StockThreshold {
   threshold_id Int      @id @default(autoincrement())
@@ -148,9 +205,9 @@ model ForecastRun {
   created_by         BigInt
   created_at         DateTime          @default(now())
 
-  product  Product          @relation(fields: [product_id], references: [product_id])
-  user     User             @relation(fields: [created_by], references: [user_id])
-  periods  ForecastPeriod[]
+  product Product          @relation(fields: [product_id], references: [product_id])
+  user    User             @relation(fields: [created_by], references: [user_id])
+  periods ForecastPeriod[]
 
   @@index([product_id, created_at])
   @@index([created_by])
@@ -172,10 +229,19 @@ model ForecastPeriod {
   @@map("forecast_periods")
 }
 
+
+// ENUMS
+
+
+enum LoteEstado {
+  DISPONIBLE
+  RESERVADO
+}
+
 enum MovementType {
-  IN
-  OUT
-  ADJUST
+  IN         // Ingreso de lote
+  OUT        // Salida por venta
+  ADJUST     // Devolución o ajuste manual
 }
 
 enum PeriodGranularity {
@@ -194,20 +260,3 @@ enum PackagingCategory {
   HALF_BOX
   FULL_BOX
 }
-
-model Category {
-  category_id BigInt   @id @default(autoincrement())
-  name        String   @unique @db.VarChar(60)
-  reference   String   @unique @db.VarChar(20)
-  is_active   Boolean  @default(true)
-  created_by  BigInt
-  created_at  DateTime @default(now())
-
-  products Product[]
-
-  @@index([name])
-  @@index([reference])
-  @@index([is_active])
-  @@map("categories")
-}
-
