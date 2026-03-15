@@ -77,9 +77,7 @@ model Packaging {
   user     User      @relation(fields: [created_by], references: [user_id])
   products Product[]
 
-  @@index([category])
   @@index([is_active])
-  @@map("packaging")
 }
 
 model Product {
@@ -138,6 +136,10 @@ model Lote {
   notas                String?    @db.VarChar(200)
   created_by           BigInt
   created_at           DateTime   @default(now())
+  cantidad_cajas    Int?
+  tipo_caja         TipoCaja?
+  ramos_por_caja    Int?
+  tallos_por_ramo   Int?
 
   product  Product           @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
   location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
@@ -232,19 +234,29 @@ model ForecastPeriod {
   @@map("forecast_periods")
 }
 
-
-// ENUMS
-
-
 enum LoteEstado {
   DISPONIBLE
+  AGOTADO
   RESERVADO
 }
 
 enum MovementType {
-  IN         // Ingreso de lote
-  OUT        // Salida por venta
-  ADJUST     // Devolución o ajuste manual
+  ENTRADA
+  VENTA
+  DESPERDICIO
+  RESERVA
+}
+
+enum TipoCaja {
+  QUARTER_BOX
+  HALF_BOX
+  FULL_BOX
+}
+
+enum PackagingCategory {
+  QUARTER_BOX
+  HALF_BOX
+  FULL_BOX
 }
 
 enum PeriodGranularity {
@@ -256,10 +268,4 @@ enum PeriodGranularity {
 enum ForecastMethod {
   HISTORICAL_AVG
   SIMPLE_TREND
-}
-
-enum PackagingCategory {
-  QUARTER_BOX
-  HALF_BOX
-  FULL_BOX
 }
