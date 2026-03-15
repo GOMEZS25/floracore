@@ -113,6 +113,7 @@ model InventoryLocation {
   location_id Int     @id @default(autoincrement())
   name        String  @unique @db.VarChar(60)
   description String? @db.VarChar(200)
+  is_active   Boolean @default(true)
 
   lotes            Lote[]
   stock_thresholds StockThreshold[]
@@ -121,6 +122,7 @@ model InventoryLocation {
 }
 
 // Lote: representa cada ingreso físico de mercancía a una bodega
+
 model Lote {
   lote_id              BigInt     @id @default(autoincrement())
   numero_lote          String     @unique @db.VarChar(40)
@@ -151,6 +153,7 @@ model Lote {
 }
 
 // Movimiento: historial de cada operación sobre un lote
+
 model StockMovement {
   movement_id   BigInt       @id @default(autoincrement())
   lote_id       BigInt
