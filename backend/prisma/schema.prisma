@@ -77,9 +77,7 @@ model Packaging {
   user     User      @relation(fields: [created_by], references: [user_id])
   products Product[]
 
-  @@index([category])
   @@index([is_active])
-  @@map("packaging")
 }
 
 model Product {
@@ -113,6 +111,7 @@ model InventoryLocation {
   location_id Int     @id @default(autoincrement())
   name        String  @unique @db.VarChar(60)
   description String? @db.VarChar(200)
+  is_active   Boolean @default(true)
 
   lotes            Lote[]
   stock_thresholds StockThreshold[]
@@ -244,15 +243,17 @@ enum MovementType {
   ADJUST     // Devolución o ajuste manual
 }
 
-enum PeriodGranularity {
-  DAY
-  WEEK
-  MONTH
+enum MovementType {
+  ENTRADA
+  VENTA
+  DESPERDICIO
+  RESERVA
 }
 
-enum ForecastMethod {
-  HISTORICAL_AVG
-  SIMPLE_TREND
+enum TipoCaja {
+  QUARTER_BOX
+  HALF_BOX
+  FULL_BOX
 }
 
 enum PackagingCategory {
