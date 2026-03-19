@@ -12,7 +12,7 @@ const crearBodega = async (req, res) => {
             return res.status(400).json({ error: 'El nombre de la bodega es requerido' });
         }
 
-        //Validar que el nombre no exista
+
         const bodegaExistente = await prisma.inventoryLocation.findUnique({
             where: {
                 name
@@ -22,7 +22,7 @@ const crearBodega = async (req, res) => {
             return res.status(400).json({ error: 'La bodega ya existe' });
         }
 
-        //Crear bodega
+
         const bodegas = await prisma.inventoryLocation.create({
             data: {
                 name,

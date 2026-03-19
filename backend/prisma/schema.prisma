@@ -136,10 +136,10 @@ model Lote {
   notas                String?    @db.VarChar(200)
   created_by           BigInt
   created_at           DateTime   @default(now())
-  cantidad_cajas    Int?
-  tipo_caja         TipoCaja?
-  ramos_por_caja    Int?
-  tallos_por_ramo   Int?
+  cantidad_cajas       Int?
+  tipo_caja            TipoCaja?
+  ramos_por_caja       Int?
+  tallos_por_ramo      Int?
 
   product  Product           @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
   location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
