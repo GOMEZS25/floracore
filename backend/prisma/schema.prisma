@@ -120,7 +120,6 @@ model InventoryLocation {
 }
 
 // Lote: representa cada ingreso físico de mercancía a una bodega
-
 model Lote {
   lote_id              BigInt     @id @default(autoincrement())
   numero_lote          String     @unique @db.VarChar(40)
@@ -136,10 +135,6 @@ model Lote {
   notas                String?    @db.VarChar(200)
   created_by           BigInt
   created_at           DateTime   @default(now())
-  cantidad_cajas       Int?
-  tipo_caja            TipoCaja?
-  ramos_por_caja       Int?
-  tallos_por_ramo      Int?
 
   product  Product           @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
   location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
@@ -155,7 +150,6 @@ model Lote {
 }
 
 // Movimiento: historial de cada operación sobre un lote
-
 model StockMovement {
   movement_id   BigInt       @id @default(autoincrement())
   lote_id       BigInt
@@ -175,7 +169,7 @@ model StockMovement {
 }
 
 
-// UMBRALES Y PROYECCIONES 
+// UMBRALES Y PROYECCIONES (RF4 / RF8)
 
 
 model StockThreshold {
@@ -234,10 +228,19 @@ model ForecastPeriod {
   @@map("forecast_periods")
 }
 
+
+// ENUMS
+
+
 enum LoteEstado {
   DISPONIBLE
-  AGOTADO
   RESERVADO
+}
+
+enum MovementType {
+  IN         // Ingreso de lote
+  OUT        // Salida por venta
+  ADJUST     // Devolución o ajuste manual
 }
 
 enum MovementType {
@@ -257,15 +260,4 @@ enum PackagingCategory {
   QUARTER_BOX
   HALF_BOX
   FULL_BOX
-}
-
-enum PeriodGranularity {
-  DAY
-  WEEK
-  MONTH
-}
-
-enum ForecastMethod {
-  HISTORICAL_AVG
-  SIMPLE_TREND
 }
