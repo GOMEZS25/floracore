@@ -9,7 +9,7 @@ const crearBodega = async (req, res) => {
 
         //Validar campos
         if (!name) {
-            return res.status(400).json({ error: 'El nombre de la bodega es requerido' });
+            return res.status(400).json({ mensaje: 'El nombre de la bodega es requerido' });
         }
 
 
@@ -19,7 +19,7 @@ const crearBodega = async (req, res) => {
             }
         });
         if (bodegaExistente) {
-            return res.status(400).json({ error: 'La bodega ya existe' });
+            return res.status(400).json({ mensaje: 'La bodega ya existe' });
         }
 
 
@@ -33,7 +33,7 @@ const crearBodega = async (req, res) => {
         return res.status(201).json(serializeBigInt(bodegas));
     } catch (error) {
         console.error('Error al crear bodega:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+        return res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 }
 
@@ -51,8 +51,8 @@ const listarBodegas = async (req, res) => {
         });
         return res.status(200).json(serializeBigInt(bodegas));
     } catch (error) {
-        console.error('Error al listar bodegas:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+        console.error('Error al listar bodegas:', mensaje);
+        return res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 }
 
@@ -67,14 +67,14 @@ const actualizarBodega = async (req, res) => {
 
         //Validar campos obligatorios
         if (!name) {
-            return res.status(400).json({ error: 'El nombre de la bodega es requerido' });
+            return res.status(400).json({ mensaje: 'El nombre de la bodega es requerido' });
         }
 
         const bodega = await prisma.inventoryLocation.findUnique({
             where: { location_id: parseInt(location_id) }
         });
         if (!bodega) {
-            return res.status(404).json({ error: 'La bodega no existe' });
+            return res.status(404).json({ mensaje: 'La bodega no existe' });
         }
         //Validar que el nombre no exista
         const bodegaExistente = await prisma.inventoryLocation.findFirst({
@@ -87,7 +87,7 @@ const actualizarBodega = async (req, res) => {
         });
 
         if (bodegaExistente) {
-            return res.status(400).json({ error: 'La bodega ya existe' });
+            return res.status(400).json({ mensaje: 'La bodega ya existe' });
         }
 
         //Actualizar bodega
@@ -105,7 +105,7 @@ const actualizarBodega = async (req, res) => {
 
     } catch (error) {
         console.error('Error al actualizar bodega:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+        return res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 }
 
@@ -120,12 +120,12 @@ const inactivarBodega = async (req, res) => {
         });
         //Validar que la bodega exista
         if (!bodega) {
-            return res.status(404).json({ error: 'La bodega no existe' });
+            return res.status(404).json({ mensaje: 'La bodega no existe' });
         }
 
         //Validar que la bodega no este inactiva
         if (!bodega.is_active) {
-            return res.status(400).json({ error: 'La bodega ya esta inactiva' });
+            return res.status(400).json({ mensaje: 'La bodega ya esta inactiva' });
         }
 
         /*Validar que la bodega no tenga productos
@@ -135,7 +135,7 @@ const inactivarBodega = async (req, res) => {
             }
         });
         if (productos) {
-            return res.status(400).json({ error: 'La bodega no puede ser inactivada porque tiene productos asociados' });
+            return res.status(400).json({ mensaje: 'La bodega no puede ser inactivada porque tiene productos asociados' });
         }*/
 
         //Inactivar bodega
@@ -151,7 +151,7 @@ const inactivarBodega = async (req, res) => {
 
     } catch (error) {
         console.error('Error al inactivar bodega:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+        return res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 }
 
