@@ -9,6 +9,7 @@ const categoryRoutes = require('./routes/category.routes');
 const productRoutes = require('./routes/product.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 const lotRoutes = require('./routes/lot.routes');
+const movimientoRoutes = require('./routes/movimientos.routes');
 
 const app = express();
 
@@ -23,10 +24,11 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/lot', lotRoutes)
+app.use('/api/lot/:lote_id/movimiento', movimientoRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-    res.json({ message: "API FloraCore" });
+    res.json({ mensaje: "API FloraCore" });
 });
 
 const PORT = process.env.PORT || 3001;

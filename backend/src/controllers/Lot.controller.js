@@ -79,6 +79,129 @@ const crearLote = async (req, res) => {
     }
 };
 
+
+//Listar Lote
+
+const listarLotes = async (req, res) => {
+    try {
+        const { location_id } = req.query;
+
+        const where = {};
+
+        if (location_id) {
+            where.location_id = Number(location_id);
+        }
+        const lotes = await prisma.lote.findMany({
+            include: {
+                product: {
+                    select: {
+                        name: true,
+                        sku: true
+                    }
+                },
+                location: {
+                    select: {
+                        name: true
+                    }
+                }
+            }
+        });
+
+        return res.status(200).json({
+            mensaje: 'Lotes listados exitosamente',
+            data: serializeBigInt(lotes)
+        });
+
+    } catch (error) {
+        console.error("Error al listar lotes");
+        return res.status(500).json({ mensaje: "Error interno en el servidor" })
+    }
+}
+
+
+//Actualizar Lotes
+
+const actualizarLote = async (req, res) => {
+    try {
+        const { lote_id } = req.params;
+        const { zona_corte, notas, estado, tipo_caja, ramos_por_caja, tallos_por_ramo, cantidad_cajas, } = req.body;
+
+
+        //Validar campos oligatorios
+        if (!lote_id) {
+            return res.status(400).json({ mensaje: "El lote_id es obligatorio" });
+        }
+
+        const lote = await prisma.lote.update({
+            where: { lote_id: BigInt(lote_id) },
+            data: {
+                zona_corte,
+                notas,
+                estado,
+                tipo_caja,
+                ramos_por_caja,
+                tallos_por_ramo,
+                cantidad_cajas
+            }
+        })
+
+        res.status(200).json({
+            mensaje: "Lote actualizado exitosamente",
+            data: serializeBigInt(lote)
+        });
+
+
+    } catch (error) {
+        console.error("Error al actualizar Lote", error.message)
+        return res.status(500).json({ mensaje: "Error interno en el servidor" })
+    }
+}
+
+
+
+
+//Eliminar Lote
+const eliminarLote = async (req, res) => {
+    try {
+        const { lote_id } = req.params;
+
+        if (!lote_id) {
+            return res.status(400).json({ mensaje: "El lote es obligatorio" });
+        }
+
+        // Verificar movimientos
+        const movimientos = await prisma.stockMovement.count({
+            where: { lote_id: BigInt(lote_id) }
+        });
+
+        if (movimientos > 1) {
+            return res.status(400).json({ mensaje: "No se puede eliminar un lote que tiene movimientos asociados" });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            await tx.stockMovement.deleteMany({
+                where: { lote_id: BigInt(lote_id) }
+            });
+
+            //Eliminar el lote
+            await tx.lote.delete({
+                where: { lote_id: BigInt(lote_id) }
+            });
+        });
+
+        res.status(200).json({
+            mensaje: "Lote eliminado exitosamente"
+        });
+
+    } catch (error) {
+        console.error("Error al eliminar Lote", error.message);
+        return res.status(500).json({ mensaje: "Error interno en el servidor" });
+    }
+};
+
 module.exports = {
-    crearLote
+    crearLote,
+    listarLotes,
+    actualizarLote,
+    eliminarLote,
 };
