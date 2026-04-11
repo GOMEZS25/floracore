@@ -96,6 +96,7 @@ model Product {
   forecast_runs    ForecastRun[]
   stock_thresholds StockThreshold[]
   sowing_details   SowingDetail[]
+  projection_details ProjectionDetail[]
 
   @@index([name])
   @@index([category_id])
@@ -249,6 +250,7 @@ model Sowing {
   location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
   user     User              @relation(fields: [created_by], references: [user_id])
   details  SowingDetail[]
+  projections Projection[]
 
   @@index([location_id])
   @@index([status])
@@ -270,6 +272,40 @@ model SowingDetail {
   @@map("sowing_details")
 }
 
+// PROYECCIONES DE SIEMBRA
+
+model Projection {
+  projection_id BigInt           @id @default(autoincrement())
+  sowing_id     BigInt
+  week_number   Int
+  year          Int
+  status        ProjectionStatus @default(PROYECTADO)
+  created_at    DateTime         @default(now())
+
+  sowing  Sowing             @relation(fields: [sowing_id], references: [sowing_id], onDelete: Cascade)
+  details ProjectionDetail[]
+
+  @@index([sowing_id])
+  @@index([week_number, year])
+  @@index([status])
+  @@map("projections")
+}
+
+model ProjectionDetail {
+  detail_id       BigInt @id @default(autoincrement())
+  projection_id   BigInt
+  product_id      BigInt
+  stems_projected Int
+  stems_actual    Int?
+
+  projection Projection @relation(fields: [projection_id], references: [projection_id], onDelete: Cascade)
+  product    Product    @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+
+  @@index([projection_id])
+  @@index([product_id])
+  @@map("projection_details")
+}
+
 // ENUMS
 
 enum LocationType {
@@ -281,6 +317,11 @@ enum LocationType {
 enum SowingStatus {
   ACTIVA
   CERRADA
+}
+
+enum ProjectionStatus {
+  PROYECTADO
+  CORTADO
 }
 
 enum LoteEstado {
