@@ -5,13 +5,16 @@ const { serializeBigInt } = require('../utils/bigint.helper');
 //Crear bodega
 const crearBodega = async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, type, parent_id } = req.body;
 
         //Validar campos
         if (!name) {
             return res.status(400).json({ mensaje: 'El nombre de la bodega es requerido' });
         }
 
+        if (!type) {
+            return res.status(400).json({ mensaje: 'El tipo de ubicación es requerido' });
+        }
 
         const bodegaExistente = await prisma.inventoryLocation.findUnique({
             where: {
@@ -27,6 +30,8 @@ const crearBodega = async (req, res) => {
             data: {
                 name,
                 description,
+                type,
+                parent_id: parent_id ? parseInt(parent_id) : null,
                 is_active: true,
             }
         });
@@ -46,6 +51,8 @@ const listarBodegas = async (req, res) => {
                 location_id: true,
                 name: true,
                 description: true,
+                type: true,
+                parent_id: true,
                 is_active: true,
             }
         });

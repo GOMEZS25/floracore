@@ -35,6 +35,7 @@ model User {
   packagings       Packaging[]
   lotes            Lote[]
   clients          Client[]
+  sowings          Sowing[]
 
   @@index([role_id])
   @@index([is_active])
@@ -94,6 +95,7 @@ model Product {
   lotes            Lote[]
   forecast_runs    ForecastRun[]
   stock_thresholds StockThreshold[]
+  sowing_details   SowingDetail[]
 
   @@index([name])
   @@index([category_id])
@@ -104,14 +106,23 @@ model Product {
 // INVENTARIO
 
 model InventoryLocation {
-  location_id Int     @id @default(autoincrement())
-  name        String  @unique @db.VarChar(60)
-  description String? @db.VarChar(200)
-  is_active   Boolean @default(true)
+  location_id Int          @id @default(autoincrement())
+  name        String       @unique @db.VarChar(60)
+  description String?      @db.VarChar(200)
+  type        LocationType
+  parent_id   Int?
+  is_active   Boolean      @default(true)
+
+  parent   InventoryLocation?  @relation("LocationHierarchy", fields: [parent_id], references: [location_id], onDelete: Restrict)
+  children InventoryLocation[] @relation("LocationHierarchy")
 
   lotes            Lote[]
   stock_thresholds StockThreshold[]
+  sowings          Sowing[]
 
+  @@index([parent_id])
+  @@index([type])
+  @@index([is_active])
   @@map("inventory_locations")
 }
 
@@ -224,7 +235,53 @@ model ForecastPeriod {
   @@map("forecast_periods")
 }
 
+// SIEMBRA
+
+model Sowing {
+  sowing_id          BigInt       @id @default(autoincrement())
+  location_id        Int
+  planting_date      DateTime     @db.Date
+  estimated_cut_week Int
+  status             SowingStatus @default(ACTIVA)
+  created_by         BigInt
+  created_at         DateTime     @default(now())
+
+  location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
+  user     User              @relation(fields: [created_by], references: [user_id])
+  details  SowingDetail[]
+
+  @@index([location_id])
+  @@index([status])
+  @@index([planting_date])
+  @@map("sowings")
+}
+
+model SowingDetail {
+  detail_id     BigInt @id @default(autoincrement())
+  sowing_id     BigInt
+  product_id    BigInt
+  stems_planted Int
+
+  sowing  Sowing  @relation(fields: [sowing_id], references: [sowing_id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+
+  @@index([sowing_id])
+  @@index([product_id])
+  @@map("sowing_details")
+}
+
 // ENUMS
+
+enum LocationType {
+  FINCA
+  BLOQUE
+  CAMA
+}
+
+enum SowingStatus {
+  ACTIVA
+  CERRADA
+}
 
 enum LoteEstado {
   DISPONIBLE
