@@ -57,7 +57,14 @@ const crearSiembra = async (req, res) => {
                 });
             }
 
-            // Crear la nueva siembra
+            const dateObj = new Date(planting_date);
+            let yearDeCorte = dateObj.getFullYear();
+            // Lógica simple: si la semana de corte es baja y sembramos a fines de año, asume año siguiente
+            if (Number(estimated_cut_week) < 20 && dateObj.getMonth() >= 8) {
+                yearDeCorte += 1;
+            }
+
+            // Crear la nueva siembra con su respectiva proyección por defecto
             siembra = await tx.sowing.create({
                 data: {
                     location_id: Number(location_id),
@@ -69,10 +76,25 @@ const crearSiembra = async (req, res) => {
                             product_id: BigInt(d.product_id),
                             stems_planted: Number(d.stems_planted)
                         }))
+                    },
+                    projections: {
+                        create: {
+                            week_number: Number(estimated_cut_week),
+                            year: yearDeCorte,
+                            details: {
+                                create: details.map(d => ({
+                                    product_id: BigInt(d.product_id),
+                                    stems_projected: Number(d.stems_planted)
+                                }))
+                            }
+                        }
                     }
                 },
                 include: {
-                    details: true
+                    details: true,
+                    projections: {
+                        include: { details: true }
+                    }
                 }
             });
         });
