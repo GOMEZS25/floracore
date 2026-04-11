@@ -34,6 +34,7 @@ model User {
   stock_thresholds StockThreshold[]
   packagings       Packaging[]
   lotes            Lote[]
+  clients          Client[]
 
   @@index([role_id])
   @@index([is_active])
@@ -259,4 +260,71 @@ enum PeriodGranularity {
 enum ForecastMethod {
   HISTORICAL_AVG
   SIMPLE_TREND
+}
+
+// CLIENTES
+
+model Client {
+  client_id      BigInt       @id @default(autoincrement())
+  code           String       @unique @db.VarChar(20)
+  name           String       @db.VarChar(120)
+  origin         String       @db.VarChar(60)
+  currency       String       @db.VarChar(10)
+  delivery_terms String       @db.VarChar(80)
+  status         ClientStatus @default(ACTIVO)
+  is_active      Boolean      @default(true)
+  created_by     BigInt
+  created_at     DateTime     @default(now())
+
+  user      User            @relation(fields: [created_by], references: [user_id])
+  addresses ClientAddress[]
+  contacts  ClientContact[]
+
+  @@index([code])
+  @@index([status])
+  @@index([is_active])
+  @@map("clients")
+}
+
+model ClientAddress {
+  address_id   BigInt      @id @default(autoincrement())
+  client_id    BigInt
+  address_type AddressType
+  address_line String      @db.VarChar(200)
+  city         String      @db.VarChar(60)
+  country      String      @db.VarChar(60)
+  is_active    Boolean     @default(true)
+  created_at   DateTime    @default(now())
+
+  client Client @relation(fields: [client_id], references: [client_id], onDelete: Restrict)
+
+  @@index([client_id])
+  @@index([address_type])
+  @@map("client_addresses")
+}
+
+model ClientContact {
+  contact_id BigInt   @id @default(autoincrement())
+  client_id  BigInt
+  full_name  String   @db.VarChar(120)
+  email      String   @db.VarChar(120)
+  phone      String   @db.VarChar(30)
+  role       String   @db.VarChar(60)
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  client Client @relation(fields: [client_id], references: [client_id], onDelete: Restrict)
+
+  @@index([client_id])
+  @@map("client_contacts")
+}
+
+enum ClientStatus {
+  ACTIVO
+  INACTIVO
+}
+
+enum AddressType {
+  BILLING
+  SHIPPING
 }
