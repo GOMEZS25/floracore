@@ -10,6 +10,7 @@ const productRoutes = require('./routes/product.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 const lotRoutes = require('./routes/lot.routes');
 const movimientoRoutes = require('./routes/movimientos.routes');
+const clientRoutes = require('./routes/client.routes');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/lot', lotRoutes)
 app.use('/api/lot/:lote_id/movimiento', movimientoRoutes);
+app.use('/api/clients', clientRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
