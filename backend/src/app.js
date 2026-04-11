@@ -12,6 +12,8 @@ const lotRoutes = require('./routes/lot.routes');
 const movimientoRoutes = require('./routes/movimientos.routes');
 const clientRoutes = require('./routes/client.routes');
 const sowingRoutes = require('./routes/sowing.routes');
+const transactionCategoryRoutes = require('./routes/transactionCategory.routes');
+const salesOrderRoutes = require('./routes/salesOrder.routes');
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/api/lot', lotRoutes)
 app.use('/api/lot/:lote_id/movimiento', movimientoRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/sowings', sowingRoutes);
+app.use('/api/transaction-categories', transactionCategoryRoutes);
+app.use('/api/sales-orders', salesOrderRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {

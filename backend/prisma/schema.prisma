@@ -36,6 +36,7 @@ model User {
   lotes            Lote[]
   clients          Client[]
   sowings          Sowing[]
+  sales_orders     SalesOrder[]
 
   @@index([role_id])
   @@index([is_active])
@@ -97,6 +98,7 @@ model Product {
   stock_thresholds StockThreshold[]
   sowing_details   SowingDetail[]
   projection_details ProjectionDetail[]
+  sales_order_details SalesOrderDetail[]
 
   @@index([name])
   @@index([category_id])
@@ -146,12 +148,15 @@ model Lote {
   tipo_caja           TipoCaja?
   ramos_por_caja      Int?
   tallos_por_ramo     Int?
+  week_number         Int?
+  year                Int?
 
   product  Product           @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
   location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
   user     User              @relation(fields: [created_by], references: [user_id])
 
   stock_movements StockMovement[]
+  sales_order_details SalesOrderDetail[]
 
   @@index([product_id])
   @@index([location_id])
@@ -324,6 +329,19 @@ enum ProjectionStatus {
   CORTADO
 }
 
+enum SalesOrderStatus {
+  BORRADOR
+  APROBADA
+  DESPACHADA
+  CANCELADA
+}
+
+enum PackagingType {
+  TALLO
+  RAMO
+  CAJA
+}
+
 enum LoteEstado {
   DISPONIBLE
   RESERVADO
@@ -360,6 +378,76 @@ enum ForecastMethod {
   SIMPLE_TREND
 }
 
+// VENTAS
+
+model TransactionCategory {
+  category_id Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(60)
+  description String?  @db.VarChar(200)
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  clients      Client[]
+  sales_orders SalesOrder[]
+
+  @@map("transaction_categories")
+}
+
+model SalesOrder {
+  order_id                BigInt           @id @default(autoincrement())
+  order_number            Int              @unique
+  client_id               BigInt
+  client_address_id       BigInt
+  transaction_category_id Int?
+  delivery_date           DateTime         @db.Date
+  status                  SalesOrderStatus @default(BORRADOR)
+  document_url            String?          @db.VarChar(500)
+  notes                   String?          @db.VarChar(500)
+  created_by              BigInt
+  created_at              DateTime         @default(now())
+
+  client               Client               @relation(fields: [client_id], references: [client_id], onDelete: Restrict)
+  client_address       ClientAddress        @relation(fields: [client_address_id], references: [address_id], onDelete: Restrict)
+  transaction_category TransactionCategory? @relation(fields: [transaction_category_id], references: [category_id], onDelete: Restrict)
+  user                 User                 @relation(fields: [created_by], references: [user_id])
+  details              SalesOrderDetail[]
+
+  @@index([client_id])
+  @@index([client_address_id])
+  @@index([transaction_category_id])
+  @@index([status])
+  @@index([delivery_date])
+  @@map("sales_orders")
+}
+
+model SalesOrderDetail {
+  detail_id       BigInt        @id @default(autoincrement())
+  order_id        BigInt
+  lote_id         BigInt
+  product_id      BigInt
+  line_number     Int
+  packaging_type  PackagingType
+  quantity        Int
+  stems_per_bunch Int?
+  bunches_per_box Int?
+  total_stems     Int
+  total_bunches   Int?
+  total_boxes     Int?
+  unit_price      Decimal       @db.Decimal(10, 2)
+  subtotal        Decimal       @db.Decimal(10, 2)
+  notes           String?       @db.VarChar(300)
+  created_at      DateTime      @default(now())
+
+  order   SalesOrder @relation(fields: [order_id], references: [order_id], onDelete: Restrict)
+  lote    Lote       @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
+  product Product    @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+
+  @@index([order_id])
+  @@index([lote_id])
+  @@index([product_id])
+  @@map("sales_order_details")
+}
+
 // CLIENTES
 
 model Client {
@@ -371,12 +459,15 @@ model Client {
   delivery_terms String       @db.VarChar(80)
   status         ClientStatus @default(ACTIVO)
   is_active      Boolean      @default(true)
+  transaction_category_id Int?
   created_by     BigInt
   created_at     DateTime     @default(now())
 
-  user      User            @relation(fields: [created_by], references: [user_id])
-  addresses ClientAddress[]
-  contacts  ClientContact[]
+  user                 User                 @relation(fields: [created_by], references: [user_id])
+  transaction_category TransactionCategory? @relation(fields: [transaction_category_id], references: [category_id], onDelete: Restrict)
+  addresses            ClientAddress[]
+  contacts             ClientContact[]
+  sales_orders         SalesOrder[]
 
   @@index([code])
   @@index([status])
@@ -394,7 +485,8 @@ model ClientAddress {
   is_active    Boolean     @default(true)
   created_at   DateTime    @default(now())
 
-  client Client @relation(fields: [client_id], references: [client_id], onDelete: Restrict)
+  client       Client       @relation(fields: [client_id], references: [client_id], onDelete: Restrict)
+  sales_orders SalesOrder[]
 
   @@index([client_id])
   @@index([address_type])

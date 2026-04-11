@@ -1,0 +1,121 @@
+@baseUrl = http://localhost:3001/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc1ODcyMDAyLCJleHAiOjE3NzU5MDA4MDJ9.vBUrwh2VWliJdqtUgbv3PxA7ZIdr5bU5ACEDOV3Glw8
+
+### 1. Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ 
+    "email": "gomezse97@gmail.com", 
+    "password": "Temp1234" 
+}
+
+### 2. Crear TransactionCategory
+POST {{baseUrl}}/transaction-categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "name": "EXPORTACIÓN",
+    "description": "Ventas internacionales"
+}
+
+
+### 3. Listar TransactionCategories
+GET {{baseUrl}}/transaction-categories
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc1ODcyMDAyLCJleHAiOjE3NzU5MDA4MDJ9.vBUrwh2VWliJdqtUgbv3PxA7ZIdr5bU5ACEDOV3Glw8
+
+### 4. Crear SalesOrder con 2 detalles
+POST {{baseUrl}}/sales-orders
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc1ODcyMDAyLCJleHAiOjE3NzU5MDA4MDJ9.vBUrwh2VWliJdqtUgbv3PxA7ZIdr5bU5ACEDOV3Glw8
+
+{
+    "client_id": 1,
+    "client_address_id": 1,
+    "transaction_category_id": 1,
+    "delivery_date": "2026-05-15T00:00:00.000Z",
+    "notes": "Orden de venta principal",
+    "details": [
+        {
+            "lote_id": 9,
+            "product_id": 1,
+            "packaging_type": "CAJA",
+            "quantity": 10,
+            "bunches_per_box": 12,
+            "stems_per_bunch": 25,
+            "total_stems": 3000,
+            "total_bunches": 120,
+            "total_boxes": 10,
+            "unit_price": 0.35,
+            "subtotal": 1050.00
+        },
+        {
+            "lote_id": 9,
+            "product_id": 1,
+            "packaging_type": "RAMO",
+            "quantity": 50,
+            "stems_per_bunch": 25,
+            "total_stems": 1250,
+            "total_bunches": 50,
+            "unit_price": 0.40,
+            "subtotal": 500.00
+        }
+    ]
+}
+
+
+### 5. Listar SalesOrders
+GET {{baseUrl}}/sales-orders
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+### 6. Obtener SalesOrder por ID
+GET {{baseUrl}}/sales-orders/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+### 7. Aprobar SalesOrder (Id: 1)
+PATCH {{baseUrl}}/sales-orders/1/approve
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+### 8. Despachar SalesOrder (Id: 1)
+PATCH {{baseUrl}}/sales-orders/1/dispatch
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+
+### 9. Cancelar SalesOrder 
+# (Primero creamos otra orden rápida para cancelarla)
+POST {{baseUrl}}/sales-orders
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "client_id": 1,
+    "client_address_id": 1,
+    "delivery_date": "2026-05-15T00:00:00.000Z",
+    "notes": "Orden para CANCELAR",
+    "details": [
+        {
+            "lote_id": 9,
+            "product_id": 1,
+            "packaging_type": "TALLO",
+            "quantity": 100,
+            "total_stems": 100,
+            "unit_price": 0.50,
+            "subtotal": 50.00
+        }
+    ]
+}
+
+### (Y luego la cancelamos asumiendo que es la ID 2)
+PATCH {{baseUrl}}/sales-orders/2/cancel
+Content-Type: application/json
+Authorization: Bearer {{token}}
