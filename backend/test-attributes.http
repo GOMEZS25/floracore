@@ -1,0 +1,107 @@
+@baseUrl = http://localhost:3001/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc2MjE5OTMxLCJleHAiOjE3NzYyNDg3MzF9.ClHfA8LAE_8cj0n4ArsW3AAwJ46zGEz9jci0rO1bPZU
+
+### 1. Crear atributo — Color
+POST {{baseUrl}}/attributes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Color"
+}
+
+### 2. Crear atributo — Longitud
+POST {{baseUrl}}/attributes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Longitud"
+}
+
+### 3. Crear atributo — Tono
+POST {{baseUrl}}/attributes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Tono"
+}
+
+### 4. Listar atributos (sin filtros)
+GET {{baseUrl}}/attributes
+Authorization: Bearer {{token}}
+
+### 4b. Listar atributos activos
+GET {{baseUrl}}/attributes?is_active=true
+Authorization: Bearer {{token}}
+
+### 5. Agregar valor Rojo → Color (id: 1)
+POST {{baseUrl}}/attributes/1/values
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "Rojo"
+}
+
+### 6. Agregar valor Amarillo → Color (id: 1)
+POST {{baseUrl}}/attributes/1/values
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "Amarillo"
+}
+
+### 7. Agregar valor Rosa → Color (id: 1)
+POST {{baseUrl}}/attributes/1/values
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "Rosa"
+}
+
+### 8. Agregar valor 40cm → Longitud (id: 2)
+POST {{baseUrl}}/attributes/2/values
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "40cm"
+}
+
+### 9. Agregar valor 50cm → Longitud (id: 2)
+POST {{baseUrl}}/attributes/2/values
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "50cm"
+}
+
+### 10. Agregar valor 60cm → Longitud (id: 2)
+POST {{baseUrl}}/attributes/2/values
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": "60cm"
+}
+
+### 11. Listar valores de Color (attribute id: 1)
+GET {{baseUrl}}/attributes/1/values
+Authorization: Bearer {{token}}
+
+### 12. Toggle atributo Color (id: 1)
+PATCH {{baseUrl}}/attributes/1/toggle
+Authorization: Bearer {{token}}
+
+### 13. Toggle valor Rojo (attribute id: 1, value id: 1)
+PATCH {{baseUrl}}/attributes/1/values/1/toggle
+Authorization: Bearer {{token}}
+
+### 14. Eliminar valor Rojo (attribute id: 1, value id: 1)
+DELETE {{baseUrl}}/attributes/1/values/1
+Authorization: Bearer {{token}}
