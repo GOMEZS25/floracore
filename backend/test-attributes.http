@@ -42,7 +42,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "value": "Rojo"
+  "value": "Verde"
 }
 
 ### 6. Agregar valor Amarillo → Color (id: 1)
@@ -51,7 +51,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "value": "Amarillo"
+  "value": "Azul"
 }
 
 ### 7. Agregar valor Rosa → Color (id: 1)
@@ -105,3 +105,4 @@ Authorization: Bearer {{token}}
 ### 14. Eliminar valor Rojo (attribute id: 1, value id: 1)
 DELETE {{baseUrl}}/attributes/1/values/1
 Authorization: Bearer {{token}}
+
