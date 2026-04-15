@@ -3,6 +3,8 @@ import Login from './pages/Login/Login';
 import Home from './pages/Home/Home';
 import AppLayout from './components/Layout/AppLayout';
 import CategoriesPage from './pages/Products/Categories/CategoriesPage';
+import AttributesPage from './pages/Settings/Attributes/AttributesPage';
+
 
 
 function App() {
@@ -29,6 +31,15 @@ function App() {
           element={
             <AppLayout>
               <CategoriesPage />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/settings/attributes"
+          element={
+            <AppLayout>
+              <AttributesPage />
             </AppLayout>
           }
         />
