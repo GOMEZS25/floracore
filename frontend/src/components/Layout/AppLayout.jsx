@@ -101,6 +101,7 @@ const menuItems = [
     label: 'Configuración',
     children: [
       { key: '/settings/users', label: 'Usuarios', navigate: '/settings/users' },
+      { key: '/settings/attributes', label: 'Atributos', navigate: '/settings/attributes' },
       { key: '/settings/packaging', label: 'Empaques', navigate: '/settings/packaging' },
     ],
   },
