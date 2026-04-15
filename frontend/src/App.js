@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login/Login';
 import Home from './pages/Home/Home';
 import AppLayout from './components/Layout/AppLayout';
+import CategoriesPage from './pages/Products/Categories/CategoriesPage';
+
 
 function App() {
   return (
@@ -21,8 +23,15 @@ function App() {
           }
         />
 
-        {/* Agrega aquí el resto de rutas protegidas con el mismo patrón:
-            <Route path="/inventory/lots" element={<AppLayout><Lots /></AppLayout>} /> */}
+
+        <Route
+          path="/products/categories"
+          element={
+            <AppLayout>
+              <CategoriesPage />
+            </AppLayout>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
