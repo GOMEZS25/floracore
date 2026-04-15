@@ -37,6 +37,7 @@ model User {
   clients          Client[]
   sowings          Sowing[]
   sales_orders     SalesOrder[]
+  attributes       Attribute[]
 
   @@index([role_id])
   @@index([is_active])
@@ -49,15 +50,20 @@ model Category {
   category_id BigInt   @id @default(autoincrement())
   name        String   @unique @db.VarChar(60)
   reference   String   @unique @db.VarChar(20)
-  is_active   Boolean  @default(true)
+  is_active   Boolean  @default(false)  // ← cambiar a false
   created_by  BigInt
   created_at  DateTime @default(now())
+  parent_id   BigInt?  // 
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parent_id], references: [category_id], onDelete: Restrict)
+  children Category[] @relation("CategoryHierarchy")
 
   products Product[]
 
   @@index([name])
   @@index([reference])
   @@index([is_active])
+  @@index([parent_id])
   @@map("categories")
 }
 
@@ -93,12 +99,13 @@ model Product {
   packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id], onDelete: Restrict)
   category     Category   @relation(fields: [category_id], references: [category_id], onDelete: Restrict)
 
-  lotes            Lote[]
-  forecast_runs    ForecastRun[]
-  stock_thresholds StockThreshold[]
-  sowing_details   SowingDetail[]
-  projection_details ProjectionDetail[]
+  lotes               Lote[]
+  forecast_runs       ForecastRun[]
+  stock_thresholds    StockThreshold[]
+  sowing_details      SowingDetail[]
+  projection_details  ProjectionDetail[]
   sales_order_details SalesOrderDetail[]
+  variants            ProductVariant[]
 
   @@index([name])
   @@index([category_id])
@@ -517,4 +524,62 @@ enum ClientStatus {
 enum AddressType {
   BILLING
   SHIPPING
+}
+
+// ATRIBUTOS Y VARIANTES
+
+model Attribute {
+  attribute_id BigInt   @id @default(autoincrement())
+  name         String   @unique @db.VarChar(60)
+  is_active    Boolean  @default(true)
+  created_by   BigInt
+  created_at   DateTime @default(now())
+
+  user   User             @relation(fields: [created_by], references: [user_id])
+  values AttributeValue[]
+
+  @@index([created_by])
+  @@index([is_active])
+  @@map("attributes")
+}
+
+model AttributeValue {
+  value_id     BigInt  @id @default(autoincrement())
+  attribute_id BigInt
+  value        String  @db.VarChar(60)
+  is_active    Boolean @default(true)
+  created_at   DateTime @default(now())
+
+  attribute  Attribute              @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade)
+  variant_attributes ProductVariantAttribute[]
+
+  @@index([attribute_id])
+  @@map("attribute_values")
+}
+
+model ProductVariant {
+  variant_id  BigInt   @id @default(autoincrement())
+  product_id  BigInt
+  sku_variant String   @unique @db.VarChar(60)
+  is_active   Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  product    Product                  @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+  attributes ProductVariantAttribute[]
+
+  @@index([product_id])
+  @@map("product_variants")
+}
+
+model ProductVariantAttribute {
+  id         BigInt @id @default(autoincrement())
+  variant_id BigInt
+  value_id   BigInt
+
+  variant ProductVariant @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade)
+  value   AttributeValue @relation(fields: [value_id], references: [value_id], onDelete: Restrict)
+
+  @@index([variant_id])
+  @@index([value_id])
+  @@map("product_variant_attributes")
 }
