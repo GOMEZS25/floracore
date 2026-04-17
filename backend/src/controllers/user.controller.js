@@ -30,10 +30,11 @@ const USER_SELECT = {
 
 const crearUsuario = async (req, res) => {
     try {
-        const { full_name, email, password, role_id } = req.body;
 
-        if (!full_name || !email || !password || !role_id) {
-            return res.status(400).json({ mensaje: 'Los campos full_name, email, password y role_id son obligatorios' });
+        const { full_name, email, password } = req.body;
+
+        if (!full_name || !email || !password) {
+            return res.status(400).json({ mensaje: 'Los campos full_name, email y password son obligatorios' });
         }
 
         const emailExistente = await prisma.user.findUnique({ where: { email } });
@@ -49,7 +50,6 @@ const crearUsuario = async (req, res) => {
                     full_name: full_name.trim(),
                     email: email.toLowerCase().trim(),
                     password_hash,
-                    role_id: parseInt(role_id, 10),
                     is_active: true,
                     is_super_admin: false,
                 },
@@ -75,7 +75,7 @@ const crearUsuario = async (req, res) => {
             data: serializeBigInt(usuario),
         });
     } catch (error) {
-        console.error('Error al crear usuario:', error.message);
+        console.error('Error al crear usuario:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
     }
 };
@@ -218,6 +218,11 @@ const resetPassword = async (req, res) => {
         if (!usuario) {
             return res.status(404).json({ mensaje: 'Usuario no encontrado' });
         }
+
+        if (usuario.is_super_admin) {
+            return res.status(403).json({ mensaje: 'No se puede cambiar la contraseña de un super administrador' });
+        }
+
 
         const password_hash = await bcrypt.hash(new_password, 10);
 

@@ -5,6 +5,7 @@ import AppLayout from './components/Layout/AppLayout';
 import CategoriesPage from './pages/Products/Categories/CategoriesPage';
 import AttributesPage from './pages/Settings/Attributes/AttributesPage';
 import ProductsPage from './pages/Products/ProductsPage';
+import UsersPage from './pages/Settings/Users/UsersPage';
 
 
 
@@ -52,6 +53,15 @@ function App() {
           element={
             <AppLayout>
               <AttributesPage />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/settings/users"
+          element={
+            <AppLayout>
+              <UsersPage />
             </AppLayout>
           }
         />

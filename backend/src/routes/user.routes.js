@@ -13,15 +13,16 @@ const {
 } = require('../controllers/user.controller');
 
 const { verificarToken } = require('../middlewares/auth.middleware');
+const { checkPermission } = require('../middlewares/permission.middleware');
 
-router.post('/', verificarToken, crearUsuario);
-router.get('/', verificarToken, listarUsuarios);
-router.get('/:id', verificarToken, obtenerUsuario);
-router.patch('/:id', verificarToken, actualizarUsuario);
-router.patch('/:id/toggle', verificarToken, toggleUsuario);
-router.patch('/:id/reset-password', verificarToken, resetPassword);
+router.post('/', verificarToken, checkPermission('SETTINGS', 'can_create'), crearUsuario);
+router.get('/', verificarToken, checkPermission('SETTINGS', 'can_view'), listarUsuarios);
+router.get('/:id', verificarToken, checkPermission('SETTINGS', 'can_view'), obtenerUsuario);
+router.patch('/:id', verificarToken, checkPermission('SETTINGS', 'can_edit'), actualizarUsuario);
+router.patch('/:id/toggle', verificarToken, checkPermission('SETTINGS', 'can_edit'), toggleUsuario);
+router.patch('/:id/reset-password', verificarToken, checkPermission('SETTINGS', 'can_edit'), resetPassword);
 
-router.get('/:id/permissions', verificarToken, obtenerPermisos);
-router.put('/:id/permissions', verificarToken, actualizarPermisos);
+router.get('/:id/permissions', verificarToken, checkPermission('SETTINGS', 'can_view'), obtenerPermisos);
+router.put('/:id/permissions', verificarToken, checkPermission('SETTINGS', 'can_edit'), actualizarPermisos);
 
 module.exports = router;
