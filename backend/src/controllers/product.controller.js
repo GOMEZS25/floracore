@@ -51,7 +51,7 @@ const PRODUCT_SELECT = {
     },
 };
 
-// ─── Crear producto ────────────────────────────────────────────────────────────
+//  Crear producto 
 const crearProducto = async (req, res) => {
     try {
         const { name, category_id, unit_of_measure, packaging_id } = req.body;
@@ -80,9 +80,9 @@ const crearProducto = async (req, res) => {
         }
 
         // Generar SKU: iniciales categoría + iniciales nombre + secuencial 3 dígitos
-        const prefCat  = iniciales(categoria.reference || categoria.name, 3);
+        const prefCat = iniciales(categoria.reference || categoria.name, 3);
         const prefName = iniciales(name, 3);
-        const base     = `${prefCat}${prefName}`;
+        const base = `${prefCat}${prefName}`;
 
         // Buscar cuántos SKUs con ese prefijo existen para el secuencial
         const countExistentes = await prisma.product.count({
@@ -102,7 +102,7 @@ const crearProducto = async (req, res) => {
                 sku,
                 category_id: BigInt(category_id),
                 unit_of_measure,
-                is_active: false,
+                is_active: tr,
                 ...(packaging_id && { packaging_id: Number(packaging_id) }),
             },
             select: PRODUCT_SELECT,
@@ -124,9 +124,9 @@ const listarProductos = async (req, res) => {
         const { name, sku, category_id, unit_of_measure, is_active } = req.query;
 
         const where = {};
-        if (name)           where.name          = { contains: name };
-        if (sku)            where.sku            = { contains: sku };
-        if (category_id)    where.category_id    = BigInt(category_id);
+        if (name) where.name = { contains: name };
+        if (sku) where.sku = { contains: sku };
+        if (category_id) where.category_id = BigInt(category_id);
         if (unit_of_measure) where.unit_of_measure = unit_of_measure;
         if (is_active !== undefined && is_active !== '')
             where.is_active = is_active === 'true';
@@ -369,7 +369,7 @@ const generarVariantes = async (req, res) => {
                     data: {
                         product_id: productId,
                         sku_variant: skuVariant,
-                        is_active: false,
+                        is_active: true,
                         attributes: {
                             create: combo.map((v) => ({ value_id: v.value_id })),
                         },
@@ -417,7 +417,7 @@ const listarVariantes = async (req, res) => {
 const toggleVariante = async (req, res) => {
     try {
         const { id, variantId } = req.params;
-        const productId  = BigInt(id);
+        const productId = BigInt(id);
         const variantIdBigInt = BigInt(variantId);
 
         const variante = await prisma.productVariant.findFirst({
@@ -448,7 +448,7 @@ const toggleVariante = async (req, res) => {
 const eliminarVariante = async (req, res) => {
     try {
         const { id, variantId } = req.params;
-        const productId       = BigInt(id);
+        const productId = BigInt(id);
         const variantIdBigInt = BigInt(variantId);
 
         const variante = await prisma.productVariant.findFirst({

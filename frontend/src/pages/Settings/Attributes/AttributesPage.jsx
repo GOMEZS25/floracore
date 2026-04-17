@@ -45,38 +45,31 @@ import {
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// ─── Paleta FloraCore ────────────────────────────────────────────────────────
 const PRIMARY = '#1a3c2e';
 const ACTIVE_COLOR = '#52b788';
 const SELECTED_BG = '#f0f7f2';
 const SELECTED_BORDER = '#1a3c2e';
 
-// ─── Componente principal ────────────────────────────────────────────────────
 const AttributesPage = () => {
 
-  // ── Estado: Atributos ──────────────────────────────────────────────────────
   const [attributes, setAttributes] = useState([]);
   const [loadingAttrs, setLoadingAttrs] = useState(false);
   const [inputName, setInputName] = useState('');
   const [inputStatus, setInputStatus] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({ name: '', is_active: '' });
 
-  // ── Estado: Selección ──────────────────────────────────────────────────────
   const [selectedAttr, setSelectedAttr] = useState(null);
   const [checkedAttrs, setCheckedAttrs] = useState(new Set());
   const [bulkLoadingAttrs, setBulkLoadingAttrs] = useState(false);
 
-  // ── Estado: Edición inline de nombre ──────────────────────────────────────
   const [editingAttrId, setEditingAttrId] = useState(null);
   const [editingAttrName, setEditingAttrName] = useState('');
   const [savingAttrName, setSavingAttrName] = useState(false);
 
-  // ── Estado: Nuevo atributo ─────────────────────────────────────────────────
   const [newAttrName, setNewAttrName] = useState('');
   const [creatingAttr, setCreatingAttr] = useState(false);
   const [showNewAttrInput, setShowNewAttrInput] = useState(false);
 
-  // ── Estado: Valores ────────────────────────────────────────────────────────
   const [values, setValues] = useState([]);
   const [loadingValues, setLoadingValues] = useState(false);
   const [valueSearch, setValueSearch] = useState('');
@@ -84,18 +77,15 @@ const AttributesPage = () => {
   const [valuePaginationSize, setValuePaginationSize] = useState(25);
   const [valuePage, setValuePage] = useState(1);
 
-  // ── Estado: Nuevo valor ────────────────────────────────────────────────────
   const [newValueText, setNewValueText] = useState('');
   const [creatingValue, setCreatingValue] = useState(false);
 
-  // ── Estado: Selección de valores ──────────────────────────────────────────
   const [checkedValues, setCheckedValues] = useState([]);
   const [bulkLoadingValues, setBulkLoadingValues] = useState(false);
 
   const newAttrInputRef = useRef(null);
   const newValueInputRef = useRef(null);
 
-  // ── Cargar atributos ───────────────────────────────────────────────────────
   const fetchAttributes = useCallback(async (filters) => {
     setLoadingAttrs(true);
     try {
@@ -118,7 +108,6 @@ const AttributesPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Cargar valores del atributo seleccionado ───────────────────────────────
   const fetchValues = useCallback(async (attrId) => {
     setLoadingValues(true);
     setCheckedValues([]);
@@ -136,9 +125,7 @@ const AttributesPage = () => {
     }
   }, []);
 
-  // ── Seleccionar atributo ────────────────────────────────────────────────────
   const handleSelectAttr = (attr) => {
-    // Cancelar edición inline si estaba activa
     setEditingAttrId(null);
     setEditingAttrName('');
 
@@ -154,7 +141,6 @@ const AttributesPage = () => {
     fetchValues(attr.attribute_id);
   };
 
-  // ── Filtros de atributos ───────────────────────────────────────────────────
   const handleSearchAttrs = () => {
     const filters = { name: inputName.trim(), is_active: inputStatus };
     setAppliedFilters(filters);
@@ -169,7 +155,6 @@ const AttributesPage = () => {
     fetchAttributes(filters);
   };
 
-  // ── Crear atributo ─────────────────────────────────────────────────────────
   const handleCreateAttr = async () => {
     const name = newAttrName.trim();
     if (!name) return;
@@ -190,7 +175,6 @@ const AttributesPage = () => {
     }
   };
 
-  // ── Edición inline de nombre ───────────────────────────────────────────────
   const startEditAttr = (e, attr) => {
     e.stopPropagation();
     setEditingAttrId(String(attr.attribute_id));
@@ -214,7 +198,6 @@ const AttributesPage = () => {
     try {
       await updateAttribute(attr.attribute_id, { name });
       notification.success({ message: 'Nombre actualizado' });
-      // Actualizar en lista local
       setAttributes((prev) =>
         prev.map((a) =>
           String(a.attribute_id) === String(attr.attribute_id) ? { ...a, name } : a
@@ -235,7 +218,6 @@ const AttributesPage = () => {
     }
   };
 
-  // ── Toggle atributo ────────────────────────────────────────────────────────
   const handleToggleAttr = async (e, attr) => {
     e.stopPropagation();
     try {
@@ -244,7 +226,6 @@ const AttributesPage = () => {
         message: `Atributo ${attr.is_active ? 'inactivado' : 'activado'} correctamente`,
       });
       fetchAttributes(appliedFilters);
-      // Si era el seleccionado, actualizar su estado
       if (selectedAttr && String(selectedAttr.attribute_id) === String(attr.attribute_id)) {
         setSelectedAttr((prev) => ({ ...prev, is_active: !prev.is_active }));
       }
@@ -256,7 +237,6 @@ const AttributesPage = () => {
     }
   };
 
-  // ── Selección múltiple de atributos ───────────────────────────────────────
   const toggleCheckAttr = (e, id) => {
     e.stopPropagation();
     setCheckedAttrs((prev) => {
@@ -312,7 +292,6 @@ const AttributesPage = () => {
     fetchAttributes(appliedFilters);
   };
 
-  // ── Crear valor ────────────────────────────────────────────────────────────
   const handleCreateValue = async () => {
     if (!selectedAttr) return;
     const value = newValueText.trim();
@@ -333,10 +312,9 @@ const AttributesPage = () => {
     }
   };
 
-  // ── Toggle valor ───────────────────────────────────────────────────────────
   const handleToggleValue = async (valueRecord) => {
     try {
-      await toggleAttributeValue(selectedAttr.attribute_id, valueRecord.attribute_value_id);
+      await toggleAttributeValue(selectedAttr.attribute_id, valueRecord.value_id);
       notification.success({
         message: `Valor ${valueRecord.is_active ? 'inactivado' : 'activado'} correctamente`,
       });
@@ -349,7 +327,6 @@ const AttributesPage = () => {
     }
   };
 
-  // ── Eliminar valor ─────────────────────────────────────────────────────────
   const handleDeleteValue = async (valueRecord) => {
     try {
       await deleteAttributeValue(selectedAttr.attribute_id, valueRecord.value_id);
@@ -366,7 +343,6 @@ const AttributesPage = () => {
     }
   };
 
-  // ── Acciones masivas sobre valores ─────────────────────────────────────────
   const handleBulkValues = async (action) => {
     setBulkLoadingValues(true);
     const errors = [];
@@ -374,12 +350,12 @@ const AttributesPage = () => {
     let targetIds = [...checkedValues];
     if (action === 'activate') {
       const inactiveIds = new Set(
-        values.filter((v) => !v.is_active).map((v) => String(v.attribute_value_id))
+        values.filter((v) => !v.is_active).map((v) => String(v.value_id))
       );
       targetIds = targetIds.filter((id) => inactiveIds.has(id));
     } else if (action === 'deactivate') {
       const activeIds = new Set(
-        values.filter((v) => v.is_active).map((v) => String(v.attribute_value_id))
+        values.filter((v) => v.is_active).map((v) => String(v.value_id))
       );
       targetIds = targetIds.filter((id) => activeIds.has(id));
     }
@@ -417,7 +393,6 @@ const AttributesPage = () => {
     fetchValues(selectedAttr.attribute_id);
   };
 
-  // ── Filtrado local de valores ──────────────────────────────────────────────
   const filteredValues = values.filter((v) => {
     const matchText = valueSearch
       ? (v.value ?? '').toLowerCase().includes(valueSearch.toLowerCase())
@@ -433,7 +408,6 @@ const AttributesPage = () => {
 
   const activeCount = values.filter((v) => v.is_active).length;
 
-  // ── Columnas de la tabla de valores ───────────────────────────────────────
   const valueColumns = [
     {
       title: 'Valor',
@@ -501,10 +475,8 @@ const AttributesPage = () => {
     columnWidth: 40,
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ padding: '4px 0' }}>
-      {/* ── Título ──────────────────────────────────────────────────────────── */}
       <Row align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Title
@@ -516,9 +488,8 @@ const AttributesPage = () => {
         </Col>
       </Row>
 
-      {/* ── Layout dos paneles ───────────────────────────────────────────────── */}
       <Row gutter={0} style={{ minHeight: 600 }}>
-        {/* ══════════════ PANEL IZQUIERDO — ATRIBUTOS ══════════════ */}
+        {/* PANEL IZQUIERDO — ATRIBUTOS */}
         <Col
           xs={24}
           md={10}
@@ -532,7 +503,6 @@ const AttributesPage = () => {
             overflow: 'hidden',
           }}
         >
-          {/* Cabecera panel izquierdo */}
           <div
             style={{
               padding: '16px 18px 12px',
@@ -566,7 +536,6 @@ const AttributesPage = () => {
               </Col>
             </Row>
 
-            {/* Input nuevo atributo */}
             {showNewAttrInput && (
               <div style={{ marginBottom: 10 }}>
                 <Input
@@ -605,7 +574,6 @@ const AttributesPage = () => {
               </div>
             )}
 
-            {/* Filtros atributos */}
             <Row gutter={[8, 8]} align="middle">
               <Col flex="1">
                 <Input
@@ -651,14 +619,12 @@ const AttributesPage = () => {
             </Row>
           </div>
 
-          {/* Contador */}
           <div style={{ padding: '8px 18px 4px' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
               {attributes.length} {attributes.length === 1 ? 'atributo' : 'atributos'}
             </Text>
           </div>
 
-          {/* Barra acciones masivas atributos */}
           {checkedAttrs.size > 0 && (
             <div
               style={{
@@ -716,7 +682,6 @@ const AttributesPage = () => {
             </div>
           )}
 
-          {/* Lista de atributos */}
           <div
             style={{
               flex: 1,
@@ -764,14 +729,12 @@ const AttributesPage = () => {
                       boxShadow: isSelected ? '0 2px 8px rgba(26,60,46,0.10)' : 'none',
                     }}
                   >
-                    {/* Checkbox */}
                     <Checkbox
                       checked={isChecked}
                       onChange={(e) => toggleCheckAttr(e, attr.attribute_id)}
                       onClick={(e) => e.stopPropagation()}
                     />
 
-                    {/* Contenido */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {isEditing ? (
                         <Input
@@ -828,7 +791,6 @@ const AttributesPage = () => {
                               </Text>
                             </div>
                           </Col>
-                          {/* Acciones */}
                           <Col>
                             <Space size={4} onClick={(e) => e.stopPropagation()}>
                               <Tooltip title="Editar nombre">
@@ -863,7 +825,7 @@ const AttributesPage = () => {
           </div>
         </Col>
 
-        {/* ══════════════ PANEL DERECHO — VALORES ══════════════ */}
+        {/* PANEL DERECHO — VALORES */}
         <Col
           xs={24}
           md={14}
@@ -877,7 +839,6 @@ const AttributesPage = () => {
           }}
         >
           {!selectedAttr ? (
-            /* ── Empty state ────────────────────────────────────────────── */
             <div
               style={{
                 flex: 1,
@@ -898,9 +859,7 @@ const AttributesPage = () => {
               />
             </div>
           ) : (
-            /* ── Panel de valores ───────────────────────────────────────── */
             <>
-              {/* Cabecera */}
               <div
                 style={{
                   padding: '16px 20px 12px',
@@ -922,7 +881,6 @@ const AttributesPage = () => {
                   </Col>
                 </Row>
 
-                {/* Input agregar nuevo valor */}
                 <Input
                   ref={newValueInputRef}
                   placeholder="Escribe un nuevo valor y presiona Enter"
@@ -950,7 +908,6 @@ const AttributesPage = () => {
                 />
               </div>
 
-              {/* Filtros de valores */}
               <div
                 style={{
                   padding: '10px 20px',
@@ -1005,7 +962,6 @@ const AttributesPage = () => {
                 </Row>
               </div>
 
-              {/* Barra acciones masivas valores */}
               {checkedValues.length > 0 && (
                 <div
                   style={{
@@ -1084,10 +1040,9 @@ const AttributesPage = () => {
                 </div>
               )}
 
-              {/* Tabla de valores */}
               <div style={{ flex: 1, padding: '8px 16px 16px', overflowY: 'auto' }}>
                 <Table
-                  rowKey={(r) => String(r.attribute_value_id)}
+                  rowKey={(r) => String(r.value_id)}
                   columns={valueColumns}
                   dataSource={filteredValues}
                   loading={{
