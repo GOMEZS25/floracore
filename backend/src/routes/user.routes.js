@@ -1,30 +1,27 @@
 const express = require('express');
-
 const router = express.Router();
 
-//Importar controladores
-const { crearUsuario, listarUsuarios, obtenerUsuario, actualizarUsuario, eliminarUsuario } = require('../controllers/user.controller');
+const {
+    crearUsuario,
+    listarUsuarios,
+    obtenerUsuario,
+    actualizarUsuario,
+    toggleUsuario,
+    resetPassword,
+    obtenerPermisos,
+    actualizarPermisos,
+} = require('../controllers/user.controller');
 
-//Importar middleware
 const { verificarToken } = require('../middlewares/auth.middleware');
 
-// Crear la ruta POST '/' protegida con el middleware
 router.post('/', verificarToken, crearUsuario);
-
-//Crear ruta get para listar usuarios
 router.get('/', verificarToken, listarUsuarios);
+router.get('/:id', verificarToken, obtenerUsuario);
+router.patch('/:id', verificarToken, actualizarUsuario);
+router.patch('/:id/toggle', verificarToken, toggleUsuario);
+router.patch('/:id/reset-password', verificarToken, resetPassword);
 
-//Listar usuaririos
-router.get("/:id", verificarToken, obtenerUsuario);
+router.get('/:id/permissions', verificarToken, obtenerPermisos);
+router.put('/:id/permissions', verificarToken, actualizarPermisos);
 
-
-//Actualizar usuario
-router.put("/:id", verificarToken, actualizarUsuario);
-
-
-//Eliminar usuario
-router.delete("/:id", verificarToken, eliminarUsuario);
-
-// Exportar router
 module.exports = router;
-
