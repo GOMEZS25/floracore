@@ -12,12 +12,13 @@ const {
 
 // Importar middleware
 const { verificarToken } = require('../middlewares/auth.middleware');
+const { checkPermission } = require('../middlewares/permission.middleware');
 
 // Siembras
-router.post('/', verificarToken, crearSiembra);
-router.get('/', verificarToken, listarSiembras);
-router.get('/:id', verificarToken, obtenerSiembra);
-router.patch('/:id/close', verificarToken, cerrarSiembra);
+router.post('/', verificarToken, checkPermission('FARM', 'can_create'), crearSiembra);
+router.get('/', verificarToken, checkPermission('FARM', 'can_view'), listarSiembras);
+router.get('/:id', verificarToken, checkPermission('FARM', 'can_view'), obtenerSiembra);
+router.patch('/:id/close', verificarToken, checkPermission('FARM', 'can_edit'), cerrarSiembra);
 
 // Exportar router
 module.exports = router;

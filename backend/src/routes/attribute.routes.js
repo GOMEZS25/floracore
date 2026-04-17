@@ -20,34 +20,35 @@ const {
 
 // Importar middleware
 const { verificarToken } = require('../middlewares/auth.middleware');
+const { checkPermission } = require('../middlewares/permission.middleware');
 
 // ─── Rutas de Attribute ────────────────────────────────────────────────────────
 
 // Crear atributo
-router.post('/', verificarToken, crearAtributo);
+router.post('/', verificarToken, checkPermission('SETTINGS', 'can_create'), crearAtributo);
 
 // Listar atributos (con filtros opcionales ?name=&is_active=)
-router.get('/', verificarToken, listarAtributos);
+router.get('/', verificarToken, checkPermission('SETTINGS', 'can_view'), listarAtributos);
 
 // Actualizar nombre de atributo
-router.patch('/:id', verificarToken, actualizarAtributo);
+router.patch('/:id', verificarToken, checkPermission('SETTINGS', 'can_edit'), actualizarAtributo);
 
 // Toggle activo/inactivo de atributo
-router.patch('/:id/toggle', verificarToken, toggleAtributo);
+router.patch('/:id/toggle', verificarToken, checkPermission('SETTINGS', 'can_edit'), toggleAtributo);
 
 // ─── Rutas de AttributeValue (subrutas) ───────────────────────────────────────
 
 // Agregar valor al atributo
-valuesRouter.post('/', verificarToken, agregarValor);
+valuesRouter.post('/', verificarToken, checkPermission('SETTINGS', 'can_create'), agregarValor);
 
 // Listar valores del atributo
-valuesRouter.get('/', verificarToken, listarValores);
+valuesRouter.get('/', verificarToken, checkPermission('SETTINGS', 'can_view'), listarValores);
 
 // Toggle activo/inactivo de un valor
-valuesRouter.patch('/:valueId/toggle', verificarToken, toggleValor);
+valuesRouter.patch('/:valueId/toggle', verificarToken, checkPermission('SETTINGS', 'can_edit'), toggleValor);
 
 // Eliminar un valor
-valuesRouter.delete('/:valueId', verificarToken, eliminarValor);
+valuesRouter.delete('/:valueId', verificarToken, checkPermission('SETTINGS', 'can_delete'), eliminarValor);
 
 // Montar subrutas de valores en el router principal
 router.use('/:id/values', valuesRouter);

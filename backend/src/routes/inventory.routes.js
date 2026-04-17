@@ -3,10 +3,12 @@ const express = require('express');
 const router = express.Router();
 
 const { crearBodega, listarBodegas, actualizarBodega, inactivarBodega } = require('../controllers/inventory.controller');
+const { verificarToken } = require('../middlewares/auth.middleware');
+const { checkPermission } = require('../middlewares/permission.middleware');
 
-router.post('/crear-bodega', crearBodega);
-router.get('/listar-bodegas', listarBodegas);
-router.put('/actualizar-bodega/:id', actualizarBodega);
-router.patch('/inactivar-bodega/:id', inactivarBodega);
+router.get('/', verificarToken, checkPermission('INVENTORY', 'can_view'), listarBodegas);
+router.post('/', verificarToken, checkPermission('INVENTORY', 'can_create'), crearBodega);
+router.put('/:id', verificarToken, checkPermission('INVENTORY', 'can_edit'), actualizarBodega);
+router.patch('/:id/toggle', verificarToken, checkPermission('INVENTORY', 'can_edit'), inactivarBodega);
 
 module.exports = router;

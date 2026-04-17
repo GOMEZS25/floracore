@@ -12,12 +12,13 @@ const {
 } = require('../controllers/salesOrder.controller');
 
 const { verificarToken } = require('../middlewares/auth.middleware');
+const { checkPermission } = require('../middlewares/permission.middleware');
 
-router.post('/', verificarToken, crearOrden);
-router.get('/', verificarToken, listarOrdenes);
-router.get('/:id', verificarToken, obtenerOrden);
-router.patch('/:id/approve', verificarToken, aprobarOrden);
-router.patch('/:id/dispatch', verificarToken, despacharOrden);
-router.patch('/:id/cancel', verificarToken, cancelarOrden);
+router.post('/', verificarToken, checkPermission('SALES', 'can_create'), crearOrden);
+router.get('/', verificarToken, checkPermission('SALES', 'can_view'), listarOrdenes);
+router.get('/:id', verificarToken, checkPermission('SALES', 'can_view'), obtenerOrden);
+router.patch('/:id/approve', verificarToken, checkPermission('SALES', 'can_edit'), aprobarOrden);
+router.patch('/:id/dispatch', verificarToken, checkPermission('SALES', 'can_edit'), despacharOrden);
+router.patch('/:id/cancel', verificarToken, checkPermission('SALES', 'can_edit'), cancelarOrden);
 
 module.exports = router;

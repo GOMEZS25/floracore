@@ -15,21 +15,22 @@ const {
 } = require('../controllers/client.controller');
 
 const { verificarToken } = require('../middlewares/auth.middleware');
+const { checkPermission } = require('../middlewares/permission.middleware');
 
 // Clientes
-router.post('/', verificarToken, crearCliente);
-router.get('/', verificarToken, listarClientes);
-router.get('/:id', verificarToken, obtenerCliente);
-router.put('/:id', verificarToken, actualizarCliente);
-router.delete('/:id', verificarToken, desactivarCliente);
+router.post('/', verificarToken, checkPermission('CLIENTS', 'can_create'), crearCliente);
+router.get('/', verificarToken, checkPermission('CLIENTS', 'can_view'), listarClientes);
+router.get('/:id', verificarToken, checkPermission('CLIENTS', 'can_view'), obtenerCliente);
+router.put('/:id', verificarToken, checkPermission('CLIENTS', 'can_edit'), actualizarCliente);
+router.delete('/:id', verificarToken, checkPermission('CLIENTS', 'can_delete'), desactivarCliente);
 
 // Direcciones
-router.post('/:id/addresses', verificarToken, agregarDireccion);
-router.delete('/addresses/:address_id', verificarToken, desactivarDireccion);
+router.post('/:id/addresses', verificarToken, checkPermission('CLIENTS', 'can_create'), agregarDireccion);
+router.delete('/addresses/:address_id', verificarToken, checkPermission('CLIENTS', 'can_delete'), desactivarDireccion);
 
 // Contactos
-router.post('/:id/contacts', verificarToken, agregarContacto);
-router.delete('/contacts/:contact_id', verificarToken, desactivarContacto);
+router.post('/:id/contacts', verificarToken, checkPermission('CLIENTS', 'can_create'), agregarContacto);
+router.delete('/contacts/:contact_id', verificarToken, checkPermission('CLIENTS', 'can_delete'), desactivarContacto);
 
 //Exportar router
 module.exports = router;
