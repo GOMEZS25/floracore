@@ -24,8 +24,9 @@ model User {
   full_name     String   @db.VarChar(120)
   email         String   @unique @db.VarChar(120)
   password_hash String   @db.VarChar(255)
-  is_active     Boolean  @default(true)
-  created_at    DateTime @default(now())
+  is_active       Boolean  @default(true)
+  is_super_admin  Boolean  @default(false)
+  created_at      DateTime @default(now())
 
   role Role @relation(fields: [role_id], references: [role_id])
 
@@ -38,6 +39,7 @@ model User {
   sowings          Sowing[]
   sales_orders     SalesOrder[]
   attributes       Attribute[]
+  permissions      UserPermission[]
 
   @@index([role_id])
   @@index([is_active])
@@ -583,4 +585,34 @@ model ProductVariantAttribute {
   @@index([variant_id])
   @@index([value_id])
   @@map("product_variant_attributes")
+}
+
+// PERMISOS
+
+enum UserModule {
+  PRODUCTS
+  INVENTORY
+  FARM
+  SALES
+  CLIENTS
+  SETTINGS
+  REPORTS
+}
+
+model UserPermission {
+  permission_id BigInt     @id @default(autoincrement())
+  user_id       BigInt
+  module        UserModule
+  can_view      Boolean    @default(false)
+  can_create    Boolean    @default(false)
+  can_edit      Boolean    @default(false)
+  can_delete    Boolean    @default(false)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, module])
+  @@index([user_id])
+  @@map("user_permissions")
 }
