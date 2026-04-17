@@ -48,7 +48,6 @@ const { Option } = Select;
 const { confirm } = Modal;
 const { RangePicker } = DatePicker;
 
-// ─── Columnas configurables (keys) ───────────────────────────────────────────
 const ALL_COLUMN_KEYS = [
   { key: 'name', label: 'Nombre' },
   { key: 'reference', label: 'Referencia' },
@@ -59,11 +58,10 @@ const ALL_COLUMN_KEYS = [
 ];
 const DEFAULT_VISIBLE = ['name', 'reference', 'parent', 'is_active', 'actions'];
 
-// ─── Paleta FloraCore ────────────────────────────────────────────────────────
 const PRIMARY = '#1a3c2e';
 const ACTIVE_COLOR = '#52b788';
 
-// ─── Construir árbol: padres con children[] ───────────────────────────────────
+// Construye el árbol de categorías padre→hijos para la tabla expandible de Ant Design
 const buildTree = (categories) => {
   const map = {};
   categories.forEach((c) => { map[String(c.category_id)] = { ...c, children: [] }; });
@@ -73,13 +71,13 @@ const buildTree = (categories) => {
     if (c.parent_id) {
       const parentKey = String(c.parent_id);
       if (map[parentKey]) map[parentKey].children.push(map[String(c.category_id)]);
-      else roots.push(map[String(c.category_id)]); // padre no encontrado → tratar como raíz
+      else roots.push(map[String(c.category_id)]);
     } else {
       roots.push(map[String(c.category_id)]);
     }
   });
 
-  // Eliminar children vacíos para que Ant Design no muestre la flecha
+  // Eliminar arrays children vacíos para que Ant Design no muestre la flecha de expansión
   const clean = (nodes) =>
     nodes.map((n) => ({
       ...n,
@@ -89,43 +87,34 @@ const buildTree = (categories) => {
   return clean(roots);
 };
 
-// ─── Componente principal ────────────────────────────────────────────────────
 const CategoriesPage = () => {
-  // ── Estado principal ───────────────────────────────────────────────────────
   const [categories, setCategories] = useState([]);
   const [treeData, setTreeData] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // ── Filtros ────────────────────────────────────────────────────────────────
   const [inputSearch, setInputSearch] = useState('');
   const [inputStatus, setInputStatus] = useState('');
   const [dateRange, setDateRange] = useState(null);
   const [appliedFilters, setAppliedFilters] = useState({ name: '', reference: '', is_active: '' });
 
-  // ── Columnas visibles ──────────────────────────────────────────────────────
   const [visibleColumns, setVisibleColumns] = useState(new Set(DEFAULT_VISIBLE));
   const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
 
-  // ── Paginación local ───────────────────────────────────────────────────────
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
-  // ── Selección múltiple ─────────────────────────────────────────────────────
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  // ── Modal crear/editar ─────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedItem, setSelectedItem] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
-  // ── Opciones de padre en el form ───────────────────────────────────────────
   const [parentOptions, setParentOptions] = useState([]);
   const [loadingParents, setLoadingParents] = useState(false);
 
-  // ── Cargar categorías ──────────────────────────────────────────────────────
   const fetchCategories = useCallback(async (filters) => {
     setLoading(true);
     try {
@@ -140,7 +129,7 @@ const CategoriesPage = () => {
       setCategories(list);
       setTreeData(buildTree(list));
       setTotalCount(count);
-      setSelectedRowKeys([]);  // limpiar selección al recargar
+      setSelectedRowKeys([]);
     } catch (err) {
       notification.error({
         message: 'Error al cargar categorías',
@@ -156,7 +145,6 @@ const CategoriesPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Opciones de padre ──────────────────────────────────────────────────────
   const fetchParentOptions = useCallback(async (excludeId = null) => {
     setLoadingParents(true);
     try {
@@ -172,7 +160,6 @@ const CategoriesPage = () => {
     }
   }, []);
 
-  // ── Filtros ────────────────────────────────────────────────────────────────
   const handleSearch = () => {
     const filters = {
       name: inputSearch.trim(),
@@ -195,7 +182,6 @@ const CategoriesPage = () => {
 
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
 
-  // ── Modal ──────────────────────────────────────────────────────────────────
   const openCreateModal = () => {
     setModalMode('create');
     setSelectedItem(null);
@@ -223,7 +209,6 @@ const CategoriesPage = () => {
     setParentOptions([]);
   };
 
-  // ── Guardar ────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     let values;
     try { values = await form.validateFields(); }
@@ -251,7 +236,6 @@ const CategoriesPage = () => {
     }
   };
 
-  // ── Toggle individual ──────────────────────────────────────────────────────
   const handleToggle = (record) => {
     const action = record.is_active ? 'inactivar' : 'activar';
     confirm({
@@ -277,7 +261,6 @@ const CategoriesPage = () => {
     });
   };
 
-  // ── Eliminar individual ────────────────────────────────────────────────────
   const handleDelete = (record) => {
     confirm({
       title: `¿Eliminar la categoría "${record.name}"?`,
@@ -301,12 +284,11 @@ const CategoriesPage = () => {
     });
   };
 
-  // ── Acciones masivas ───────────────────────────────────────────────────────
   const executeBulk = async (action) => {
     setBulkLoading(true);
     const errors = [];
 
-    // Para toggle, filtrar solo las que realmente necesitan cambiar de estado
+    // Filtrar solo las categorías que realmente necesitan cambiar de estado
     let targetIds = [...selectedRowKeys];
     if (action === 'activate') {
       const inactiveIds = new Set(
@@ -355,7 +337,6 @@ const CategoriesPage = () => {
     fetchCategories(appliedFilters);
   };
 
-  // Calcular cuántas se verán afectadas realmente para mostrar en confirmación
   const getAffectedCount = (action) => {
     if (action === 'delete') return selectedRowKeys.length;
     if (action === 'activate')
@@ -393,7 +374,6 @@ const CategoriesPage = () => {
     });
   };
 
-  // ── Columnas del Dropdown ──────────────────────────────────────────────────
   const toggleColumn = (key) => {
     setVisibleColumns((prev) => {
       const next = new Set(prev);
@@ -411,7 +391,6 @@ const CategoriesPage = () => {
     ),
   }));
 
-  // ── Definición de columnas ─────────────────────────────────────────────────
   const allColumns = [
     {
       title: 'Nombre',
@@ -509,7 +488,6 @@ const CategoriesPage = () => {
 
   const columns = allColumns.filter((c) => visibleColumns.has(c.key));
 
-  // ── Skeleton rows ──────────────────────────────────────────────────────────
   const skeletonRows = Array.from({ length: 6 }, (_, i) => ({
     key: `sk-${i}`,
     name: <Skeleton.Input active size="small" style={{ width: 140 }} />,
@@ -520,27 +498,22 @@ const CategoriesPage = () => {
     actions: <Skeleton.Button active size="small" />,
   }));
 
-  // ── Paginación local ───────────────────────────────────────────────────────
   const pagedData = treeData.slice(
     (pagination.current - 1) * pagination.pageSize,
     pagination.current * pagination.pageSize
   );
 
-  // ── rowSelection con soporte para hijos ────────────────────────────────────
   const rowSelection = {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
-    // Permite seleccionar filas hijas también
     checkStrictly: false,
     columnWidth: 40,
   };
 
   const showDateFilter = visibleColumns.has('created_at');
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ padding: '4px 0' }}>
-      {/* ── Encabezado ──────────────────────────────────────────────────────── */}
       <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Title level={3} style={{ margin: 0, color: PRIMARY, fontFamily: "'Inter', sans-serif" }}>
@@ -572,7 +545,6 @@ const CategoriesPage = () => {
         </Col>
       </Row>
 
-      {/* ── Filtros ─────────────────────────────────────────────────────────── */}
       <div
         style={{
           background: '#fff',
@@ -636,7 +608,6 @@ const CategoriesPage = () => {
         </Row>
       </div>
 
-      {/* ── Barra de selección / acciones masivas ───────────────────────────── */}
       {selectedRowKeys.length > 0 && (
         <div
           style={{
@@ -700,7 +671,6 @@ const CategoriesPage = () => {
         </div>
       )}
 
-      {/* ── Contador ────────────────────────────────────────────────────────── */}
       {!loading && (
         <Text type="secondary" style={{ display: 'block', marginBottom: 10, fontSize: 13 }}>
           Mostrando <strong>{Math.min(pagination.pageSize, pagedData.length)}</strong> de{' '}
@@ -709,7 +679,6 @@ const CategoriesPage = () => {
         </Text>
       )}
 
-      {/* ── Tabla agrupada ───────────────────────────────────────────────────── */}
       <div
         style={{
           background: '#fff',
@@ -725,9 +694,6 @@ const CategoriesPage = () => {
           loading={false}
           rowSelection={loading ? undefined : rowSelection}
           expandable={{
-            // Ant Design usa `children` para el expand nativo del árbol
-            // No necesitamos expandedRowRender manual; con children en dataSource alcanza.
-            // Pero si se prefiere control fino se puede usar expandedRowRender:
             indentSize: 24,
           }}
           pagination={{
@@ -745,7 +711,6 @@ const CategoriesPage = () => {
         />
       </div>
 
-      {/* ── Modal Crear / Editar ─────────────────────────────────────────────── */}
       <Modal
         title={
           <span style={{ color: PRIMARY, fontWeight: 700, fontSize: 16 }}>
@@ -769,7 +734,6 @@ const CategoriesPage = () => {
         <Divider style={{ margin: '8px 0 20px' }} />
         <Form form={form} layout="vertical">
 
-          {/* 1. Categoría Padre */}
           <Form.Item
             label={
               <Space size={4}>
@@ -802,7 +766,6 @@ const CategoriesPage = () => {
             </Select>
           </Form.Item>
 
-          {/* 2. Nombre */}
           <Form.Item
             label={<Text strong>Nombre</Text>}
             name="name"
@@ -815,7 +778,6 @@ const CategoriesPage = () => {
             <Input placeholder="Ej. Rosas, Follajes, Lirios…" style={{ borderRadius: 8 }} autoFocus />
           </Form.Item>
 
-          {/* 3. Referencia */}
           <Form.Item
             label={<Text strong>Referencia</Text>}
             name="reference"

@@ -1,7 +1,7 @@
-import axios from 'axios';
+import axiosInstance from './axiosInstance';
 
 const login = async (email, password) => {
-    const response = await axios.post('http://localhost:3001/api/auth/login', {
+    const response = await axiosInstance.post('/auth/login', {
         email,
         password
     });
@@ -11,5 +11,3 @@ const login = async (email, password) => {
 };
 
 export { login };
-
-

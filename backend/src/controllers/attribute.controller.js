@@ -25,6 +25,7 @@ const crearAtributo = async (req, res) => {
             select: {
                 attribute_id: true,
                 name: true,
+                order: true,
                 is_active: true,
                 created_by: true,
                 created_at: true,
@@ -60,6 +61,7 @@ const listarAtributos = async (req, res) => {
             select: {
                 attribute_id: true,
                 name: true,
+                order: true,
                 is_active: true,
                 created_by: true,
                 created_at: true,
@@ -68,7 +70,7 @@ const listarAtributos = async (req, res) => {
                     orderBy: { value: 'asc' },
                 },
             },
-            orderBy: { name: 'asc' },
+            orderBy: [{ order: 'asc' }, { name: 'asc' }],
         });
 
         res.status(200).json(atributos.map(serializeBigInt));
@@ -83,10 +85,11 @@ const actualizarAtributo = async (req, res) => {
     try {
         const { id } = req.params;
         const attributeId = BigInt(id);
-        const { name } = req.body;
+        const { name, order } = req.body;
 
-        if (!name || !name.trim()) {
-            return res.status(400).json({ mensaje: 'El campo name es obligatorio' });
+        // Al menos uno de los dos campos debe venir
+        if (name === undefined && order === undefined) {
+            return res.status(400).json({ mensaje: 'Debe enviar al menos name u order' });
         }
 
         const atributo = await prisma.attribute.findUnique({ where: { attribute_id: attributeId } });
@@ -94,19 +97,36 @@ const actualizarAtributo = async (req, res) => {
             return res.status(404).json({ mensaje: 'Atributo no encontrado' });
         }
 
-        const duplicado = await prisma.attribute.findFirst({
-            where: { name: name.trim(), NOT: { attribute_id: attributeId } },
-        });
-        if (duplicado) {
-            return res.status(400).json({ mensaje: 'Ya existe un atributo con ese nombre' });
+        const dataToUpdate = {};
+
+        if (name !== undefined) {
+            if (!name.trim()) {
+                return res.status(400).json({ mensaje: 'El campo name no puede estar vacío' });
+            }
+            const duplicado = await prisma.attribute.findFirst({
+                where: { name: name.trim(), NOT: { attribute_id: attributeId } },
+            });
+            if (duplicado) {
+                return res.status(400).json({ mensaje: 'Ya existe un atributo con ese nombre' });
+            }
+            dataToUpdate.name = name.trim();
+        }
+
+        if (order !== undefined) {
+            const parsedOrder = parseInt(order, 10);
+            if (isNaN(parsedOrder)) {
+                return res.status(400).json({ mensaje: 'El campo order debe ser un número entero' });
+            }
+            dataToUpdate.order = parsedOrder;
         }
 
         const actualizado = await prisma.attribute.update({
             where: { attribute_id: attributeId },
-            data: { name: name.trim() },
+            data: dataToUpdate,
             select: {
                 attribute_id: true,
                 name: true,
+                order: true,
                 is_active: true,
                 created_by: true,
                 created_at: true,

@@ -532,6 +532,7 @@ model Attribute {
   attribute_id BigInt   @id @default(autoincrement())
   name         String   @unique @db.VarChar(60)
   is_active    Boolean  @default(true)
+  order        Int      @default(0)
   created_by   BigInt
   created_at   DateTime @default(now())
 
@@ -561,7 +562,7 @@ model ProductVariant {
   variant_id  BigInt   @id @default(autoincrement())
   product_id  BigInt
   sku_variant String   @unique @db.VarChar(60)
-  is_active   Boolean  @default(false)
+  is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
 
   product    Product                  @relation(fields: [product_id], references: [product_id], onDelete: Restrict)

@@ -19,7 +19,6 @@ import { jwtDecode } from 'jwt-decode';
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-// ─── Paleta FloraCore ────────────────────────────────────────────────────────
 const COLORS = {
   siderBg: '#1a3c2e',
   hoverBg: '#2d6a4f',
@@ -29,7 +28,6 @@ const COLORS = {
   logo: '#52b788',
 };
 
-// ─── Utilidad: decodificar JWT ───────────────────────────────────────────────
 function getUserFromToken() {
   try {
     const token = localStorage.getItem('token');
@@ -50,7 +48,6 @@ function getUserFromToken() {
   }
 }
 
-// ─── Definición del menú ─────────────────────────────────────────────────────
 const menuItems = [
   {
     key: '/home',
@@ -91,8 +88,8 @@ const menuItems = [
     icon: <TagOutlined />,
     label: 'Productos',
     children: [
-      { key: '/products/list', label: 'Productos', navigate: '/products/list' },
-      { key: '/products/categories', label: 'Categorías', navigate: '/products/categories' },
+      { key: '/products/list',       label: 'Productos',   navigate: '/products/list' },
+      { key: '/products/categories', label: 'Categorías',  navigate: '/products/categories' },
     ],
   },
   {
@@ -107,7 +104,6 @@ const menuItems = [
   },
 ];
 
-// ─── Componente principal ────────────────────────────────────────────────────
 const AppLayout = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
@@ -126,13 +122,11 @@ const AppLayout = ({ children }) => {
     return [];
   }, [location.pathname]);
 
-  // Cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
 
-  // Construir items para Ant Design Menu
   const buildMenuItems = (items) =>
     items.map(({ key, icon, label, navigate: nav, children: ch }) => ({
       key,
@@ -146,9 +140,7 @@ const AppLayout = ({ children }) => {
         : undefined,
     }));
 
-  // Click en item del menú
   const handleMenuClick = ({ key }) => {
-    // Buscar si el key corresponde a un subitem navegable
     for (const item of menuItems) {
       if (item.navigate && item.key === key) {
         navigate(item.navigate);
@@ -164,7 +156,6 @@ const AppLayout = ({ children }) => {
     }
   };
 
-  // Dropdown del usuario
   const userDropdownItems = [
     {
       key: 'logout',
@@ -180,7 +171,6 @@ const AppLayout = ({ children }) => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* ── SIDER ─────────────────────────────────────────────────────────── */}
       <Sider
         collapsed={collapsed}
         onCollapse={setCollapsed}
@@ -198,7 +188,6 @@ const AppLayout = ({ children }) => {
           transition: 'width 0.2s',
         }}
       >
-        {/* Logo / Marca */}
         <div
           style={{
             height: 64,
@@ -212,7 +201,6 @@ const AppLayout = ({ children }) => {
             userSelect: 'none',
           }}
         >
-          {/* Icono de planta como logo */}
           <span
             style={{
               fontSize: collapsed ? 26 : 22,
@@ -240,7 +228,6 @@ const AppLayout = ({ children }) => {
           )}
         </div>
 
-        {/* Menú de navegación */}
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
@@ -257,7 +244,6 @@ const AppLayout = ({ children }) => {
           theme="dark"
         />
 
-        {/* Estilo override para colores personalizados */}
         <style>{`
           .ant-menu-dark .ant-menu-item:hover,
           .ant-menu-dark .ant-menu-submenu-title:hover {
@@ -283,14 +269,12 @@ const AppLayout = ({ children }) => {
         `}</style>
       </Sider>
 
-      {/* ── LAYOUT DERECHO ────────────────────────────────────────────────── */}
       <Layout
         style={{
           marginLeft: collapsed ? 72 : 230,
           transition: 'margin-left 0.2s',
         }}
       >
-        {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <Header
           style={{
             position: 'sticky',
@@ -305,7 +289,6 @@ const AppLayout = ({ children }) => {
             height: 64,
           }}
         >
-          {/* Botón toggle del sider */}
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -323,7 +306,6 @@ const AppLayout = ({ children }) => {
             }}
           />
 
-          {/* Nombre de la app (visible en header también) */}
           <Text
             style={{
               color: COLORS.siderBg,
@@ -339,7 +321,6 @@ const AppLayout = ({ children }) => {
             {!collapsed ? '' : 'FloraCore ERP'}
           </Text>
 
-          {/* Usuario + logout */}
           {user ? (
             <Dropdown
               menu={{ items: userDropdownItems, onClick: handleUserMenuClick }}
@@ -398,7 +379,6 @@ const AppLayout = ({ children }) => {
           )}
         </Header>
 
-        {/* Estilo hover del dropdown de usuario */}
         <style>{`
           .user-dropdown-trigger:hover {
             background: #f0f7f2 !important;
@@ -406,7 +386,6 @@ const AppLayout = ({ children }) => {
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         `}</style>
 
-        {/* ── CONTENT ─────────────────────────────────────────────────────── */}
         <Content
           style={{
             background: '#f5f5f5',

@@ -1,120 +1,97 @@
-import axios from 'axios';
+import axiosInstance from './axiosInstance';
 
-const BASE_URL = 'http://localhost:3001/api';
+// Solo se cachea cuando se piden atributos activos sin filtro de nombre;
+// se invalida con force=true o al mutar cualquier atributo/valor.
+let _attributesCache = null;
 
-const getAuthHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
-});
+const getAttributes = async (filters = {}, force = false) => {
+  const isSimpleActiveQuery =
+    !filters.name &&
+    (filters.is_active === 'true' || filters.is_active === true);
 
-/**
- * GET /attributes?name=&is_active=
- * @param {Object} filters - { name, is_active }
- */
-const getAttributes = async (filters = {}) => {
+  if (isSimpleActiveQuery && !force && _attributesCache !== null) {
+    return _attributesCache;
+  }
+
   const params = {};
   if (filters.name) params.name = filters.name;
   if (filters.is_active !== undefined && filters.is_active !== '')
     params.is_active = filters.is_active;
 
-  const response = await axios.get(`${BASE_URL}/attributes`, {
-    headers: getAuthHeaders(),
-    params,
-  });
+  const response = await axiosInstance.get('/attributes', { params });
+
+  if (isSimpleActiveQuery) {
+    _attributesCache = response.data;
+  }
+
   return response.data;
 };
 
-/**
- * POST /attributes
- * @param {Object} data - { name }
- */
+const invalidateAttributesCache = () => {
+  _attributesCache = null;
+};
+
 const createAttribute = async (data) => {
-  const response = await axios.post(`${BASE_URL}/attributes`, data, {
-    headers: getAuthHeaders(),
-  });
+  invalidateAttributesCache();
+  const response = await axiosInstance.post('/attributes', data);
   return response.data;
 };
 
-/**
- * PATCH /attributes/:id
- * @param {string} id
- * @param {Object} data - { name }
- */
 const updateAttribute = async (id, data) => {
-  const response = await axios.patch(`${BASE_URL}/attributes/${id}`, data, {
-    headers: getAuthHeaders(),
-  });
+  invalidateAttributesCache();
+  const response = await axiosInstance.patch(`/attributes/${id}`, data);
   return response.data;
 };
 
-/**
- * PATCH /attributes/:id/toggle
- * @param {string} id
- */
+const updateAttributeOrder = async (id, order) => {
+  invalidateAttributesCache();
+  const response = await axiosInstance.patch(`/attributes/${id}`, { order });
+  return response.data;
+};
+
 const toggleAttribute = async (id) => {
-  const response = await axios.patch(
-    `${BASE_URL}/attributes/${id}/toggle`,
-    {},
-    { headers: getAuthHeaders() }
-  );
+  invalidateAttributesCache();
+  const response = await axiosInstance.patch(`/attributes/${id}/toggle`, {});
   return response.data;
 };
 
-/**
- * GET /attributes/:id/values
- * @param {string} attributeId
- */
 const getAttributeValues = async (attributeId) => {
-  const response = await axios.get(`${BASE_URL}/attributes/${attributeId}/values`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await axiosInstance.get(`/attributes/${attributeId}/values`);
   return response.data;
 };
 
-/**
- * POST /attributes/:id/values
- * @param {string} attributeId
- * @param {Object} data - { value }
- */
 const createAttributeValue = async (attributeId, data) => {
-  const response = await axios.post(
-    `${BASE_URL}/attributes/${attributeId}/values`,
-    data,
-    { headers: getAuthHeaders() }
+  invalidateAttributesCache();
+  const response = await axiosInstance.post(
+    `/attributes/${attributeId}/values`,
+    data
   );
   return response.data;
 };
 
-/**
- * PATCH /attributes/:id/values/:valueId/toggle
- * @param {string} attributeId
- * @param {string} valueId
- */
 const toggleAttributeValue = async (attributeId, valueId) => {
-  const response = await axios.patch(
-    `${BASE_URL}/attributes/${attributeId}/values/${valueId}/toggle`,
-    {},
-    { headers: getAuthHeaders() }
+  invalidateAttributesCache();
+  const response = await axiosInstance.patch(
+    `/attributes/${attributeId}/values/${valueId}/toggle`,
+    {}
   );
   return response.data;
 };
 
-/**
- * DELETE /attributes/:id/values/:valueId
- * @param {string} attributeId
- * @param {string} valueId
- */
 const deleteAttributeValue = async (attributeId, valueId) => {
-  const response = await axios.delete(
-    `${BASE_URL}/attributes/${attributeId}/values/${valueId}`,
-    { headers: getAuthHeaders() }
+  invalidateAttributesCache();
+  const response = await axiosInstance.delete(
+    `/attributes/${attributeId}/values/${valueId}`
   );
   return response.data;
 };
 
 export {
   getAttributes,
+  invalidateAttributesCache,
   createAttribute,
   updateAttribute,
+  updateAttributeOrder,
   toggleAttribute,
   getAttributeValues,
   createAttributeValue,
