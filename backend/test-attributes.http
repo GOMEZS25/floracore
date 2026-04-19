@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3001/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc2MjE5OTMxLCJleHAiOjE3NzYyNDg3MzF9.ClHfA8LAE_8cj0n4ArsW3AAwJ46zGEz9jci0rO1bPZU
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc2NDcwMjc4LCJleHAiOjE3NzY0OTkwNzh9.p2CiRG-Dw2403noLcHpgo-IoF0ndAFZ9F46SA9cTYa0
 
 ### 1. Crear atributo — Color
 POST {{baseUrl}}/attributes
@@ -106,3 +106,11 @@ Authorization: Bearer {{token}}
 DELETE {{baseUrl}}/attributes/1/values/1
 Authorization: Bearer {{token}}
 
+PATCH http://localhost:3001/api/lot/11/add
+
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "cantidad": 25
+}

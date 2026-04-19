@@ -489,6 +489,56 @@ const eliminarVariante = async (req, res) => {
     }
 };
 
+//Listar TODAS las variantes (global) 
+const listarTodasVariantes = async (req, res) => {
+    try {
+        const { is_active } = req.query;
+
+        const where = {};
+        if (is_active !== undefined && is_active !== '') {
+            where.is_active = is_active === 'true';
+        } else {
+            where.is_active = true;
+        }
+
+        const variantes = await prisma.productVariant.findMany({
+            where,
+            select: {
+                variant_id: true,
+                product_id: true,
+                sku_variant: true,
+                is_active: true,
+                product: {
+                    select: {
+                        name: true,
+                        sku: true,
+                        unit_of_measure: true,
+                    },
+                },
+                attributes: {
+                    select: {
+                        value: {
+                            select: {
+                                value: true,
+                                attribute: { select: { name: true } },
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: [
+                { product: { name: 'asc' } },
+                { sku_variant: 'asc' },
+            ],
+        });
+
+        res.status(200).json(variantes.map(serializeBigInt));
+    } catch (error) {
+        console.error('Error al listar todas las variantes:', error.message);
+        res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
+    }
+};
+
 module.exports = {
     crearProducto,
     listarProductos,
@@ -500,4 +550,5 @@ module.exports = {
     listarVariantes,
     toggleVariante,
     eliminarVariante,
+    listarTodasVariantes,
 };

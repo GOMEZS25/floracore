@@ -118,51 +118,35 @@ const actualizarBodega = async (req, res) => {
 
 
 //inactivar bodegas
-const inactivarBodega = async (req, res) => {
+const toggleBodega = async (req, res) => {
     try {
         const { id: location_id } = req.params;
 
         const bodega = await prisma.inventoryLocation.findUnique({
             where: { location_id: parseInt(location_id) }
         });
-        //Validar que la bodega exista
+
         if (!bodega) {
-            return res.status(404).json({ mensaje: 'La bodega no existe' });
+            return res.status(404).json({ mensaje: 'La ubicación no existe' });
         }
 
-        //Validar que la bodega no este inactiva
-        if (!bodega.is_active) {
-            return res.status(400).json({ mensaje: 'La bodega ya esta inactiva' });
-        }
-
-        /*Validar que la bodega no tenga productos
-        const productos = await prisma.product.findFirst({
-            where: {
-                location_id: parseInt(location_id)
-            }
+        const actualizada = await prisma.inventoryLocation.update({
+            where: { location_id: parseInt(location_id) },
+            data: { is_active: !bodega.is_active }
         });
-        if (productos) {
-            return res.status(400).json({ mensaje: 'La bodega no puede ser inactivada porque tiene productos asociados' });
-        }*/
 
-        //Inactivar bodega
-        const bodegas = await prisma.inventoryLocation.update({
-            where: {
-                location_id: parseInt(location_id)
-            },
-            data: {
-                is_active: false
-            }
+        return res.status(200).json({
+            mensaje: `Ubicación ${actualizada.is_active ? 'activada' : 'inactivada'} correctamente`,
+            data: actualizada
         });
-        return res.status(200).json({ mensaje: 'Bodega inactivada correctamente' });
 
     } catch (error) {
-        console.error('Error al inactivar bodega:', error);
+        console.error('Error al cambiar estado:', error);
         return res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
-}
+};
 
 
 
 
-module.exports = { crearBodega, listarBodegas, actualizarBodega, inactivarBodega };
+module.exports = { crearBodega, listarBodegas, actualizarBodega, toggleBodega };

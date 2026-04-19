@@ -223,7 +223,6 @@ const resetPassword = async (req, res) => {
             return res.status(403).json({ mensaje: 'No se puede cambiar la contraseña de un super administrador' });
         }
 
-
         const password_hash = await bcrypt.hash(new_password, 10);
 
         await prisma.user.update({

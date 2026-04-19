@@ -96,6 +96,7 @@ model Product {
   unit_of_measure String   @db.VarChar(20)
   is_active       Boolean  @default(true)
   created_at      DateTime @default(now())
+  product_type    ProductType @default(SIMPLE)
 
   packaging_id Int?
   packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id], onDelete: Restrict)
@@ -142,6 +143,7 @@ model Lote {
   lote_id             BigInt     @id @default(autoincrement())
   numero_lote         String     @unique @db.VarChar(40)
   product_id          BigInt
+  variant_id          BigInt?
   location_id         Int
   cantidad_inicial    Decimal    @db.Decimal(10, 2)
   cantidad_disponible Decimal    @db.Decimal(10, 2)
@@ -161,6 +163,7 @@ model Lote {
   year                Int?
 
   product  Product           @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+  variant ProductVariant?    @relation(fields: [variant_id], references: [variant_id], onDelete: Restrict)
   location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
   user     User              @relation(fields: [created_by], references: [user_id])
 
@@ -171,6 +174,7 @@ model Lote {
   @@index([location_id])
   @@index([estado])
   @@index([fecha_ingreso])
+  @@index([variant_id])
   @@map("lotes")
 }
 
@@ -387,6 +391,18 @@ enum ForecastMethod {
   SIMPLE_TREND
 }
 
+enum ProductType {
+  SIMPLE
+  SURTIDO
+  BOUQUET
+}
+
+enum InventoryMode {
+  TALLOS
+  RAMOS
+  CAJAS
+}
+
 // VENTAS
 
 model TransactionCategory {
@@ -569,6 +585,7 @@ model ProductVariant {
 
   product    Product                  @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
   attributes ProductVariantAttribute[]
+  lotes      Lote[]
 
   @@index([product_id])
   @@map("product_variants")
@@ -616,3 +633,18 @@ model UserPermission {
   @@index([user_id])
   @@map("user_permissions")
 }
+
+
+model CompanySettings {
+  id                   Int           @id @default(autoincrement())
+  inventory_mode       InventoryMode @default(TALLOS)
+  show_stems_per_bunch Boolean       @default(false)
+  show_bunches_per_box Boolean       @default(false)
+  show_box_type        Boolean       @default(false)
+  created_at           DateTime      @default(now())
+  updated_at           DateTime      @updatedAt
+
+  @@map("company_settings")
+}
+
+

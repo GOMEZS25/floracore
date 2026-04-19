@@ -45,7 +45,7 @@ const crearAtributo = async (req, res) => {
     }
 };
 
-// ─── Listar atributos ──────────────────────────────────────────────────────────
+//Listar atributos
 const listarAtributos = async (req, res) => {
     try {
         const { name, is_active } = req.query;
@@ -80,7 +80,7 @@ const listarAtributos = async (req, res) => {
     }
 };
 
-// ─── Actualizar atributo ───────────────────────────────────────────────────────
+// ─── Actualizar atributo 
 const actualizarAtributo = async (req, res) => {
     try {
         const { id } = req.params;

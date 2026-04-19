@@ -390,7 +390,7 @@ const AppLayout = ({ children }) => {
           style={{
             background: '#f5f5f5',
             minHeight: 'calc(100vh - 64px)',
-            padding: 24,
+            padding: '24px',
             overflowY: 'auto',
           }}
         >

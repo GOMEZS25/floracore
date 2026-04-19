@@ -16,18 +16,22 @@ const {
     listarVariantes,
     toggleVariante,
     eliminarVariante,
+    listarTodasVariantes,
 } = require('../controllers/product.controller');
 
 const { verificarToken } = require('../middlewares/auth.middleware');
 const { checkPermission } = require('../middlewares/permission.middleware');
 
-// ─── Rutas de Producto base ────────────────────────────────────────────────────
+//Rutas de Producto base 
 
 // Crear producto
 router.post('/', verificarToken, checkPermission('PRODUCTS', 'can_create'), crearProducto);
 
 // Listar productos (filtros opcionales: ?name=&sku=&category_id=&unit_of_measure=&is_active=)
 router.get('/', verificarToken, checkPermission('PRODUCTS', 'can_view'), listarProductos);
+
+// Listar todas las variantes globalmente
+router.get('/variants/all', verificarToken, checkPermission('INVENTORY', 'can_view'), listarTodasVariantes);
 
 // Obtener producto por ID (con variantes completas)
 router.get('/:id', verificarToken, checkPermission('PRODUCTS', 'can_view'), obtenerProducto);
@@ -41,7 +45,9 @@ router.patch('/:id/toggle', verificarToken, checkPermission('PRODUCTS', 'can_edi
 // Eliminar producto
 router.delete('/:id', verificarToken, checkPermission('PRODUCTS', 'can_delete'), eliminarProducto);
 
-// ─── Rutas de Variantes (subrutas) ────────────────────────────────────────────
+
+
+//  Rutas de Variantes (subrutas) 
 
 // Generar variantes por combinaciones de value_ids
 variantsRouter.post('/generate', verificarToken, checkPermission('PRODUCTS', 'can_create'), generarVariantes);

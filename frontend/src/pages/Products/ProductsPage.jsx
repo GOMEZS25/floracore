@@ -675,9 +675,9 @@ const ProductsPage = () => {
       title: 'Estado', dataIndex: 'is_active', key: 'is_active',
       width: 110, align: 'center',
       render: (active) => active ? (
-        <Tag color="success" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>Activo</Tag>
+        <Tag color="success">Activo</Tag>
       ) : (
-        <Tag color="error" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>Inactivo</Tag>
+        <Tag color="error">Inactivo</Tag>
       ),
     },
     {
@@ -718,17 +718,17 @@ const ProductsPage = () => {
         return (
           <Space size={6}>
             <Tooltip title="Editar">
-              <Button size="small" icon={<EditOutlined />} onClick={() => openEditWizard(record)} style={{ borderColor: PRIMARY, color: PRIMARY }} />
+              <Button size="small" icon={<EditOutlined />} onClick={() => openEditWizard(record)} style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }} />
             </Tooltip>
             <Tooltip title={record.is_active ? 'Inactivar' : 'Activar'}>
               <Button size="small"
                 icon={record.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
                 onClick={() => handleToggle(record)}
-                style={record.is_active ? { borderColor: '#faad14', color: '#faad14' } : { borderColor: ACTIVE_COLOR, color: ACTIVE_COLOR }}
+                style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }}
               />
             </Tooltip>
             <Tooltip title="Ver Variantes">
-              <Button size="small" icon={<UnorderedListOutlined />} onClick={() => openDrawer(record)} style={{ borderColor: '#722ed1', color: '#722ed1' }} />
+              <Button size="small" icon={<UnorderedListOutlined />} onClick={() => openDrawer(record)} style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }} />
             </Tooltip>
             {variantCount === 0 ? (
               <Tooltip title="Eliminar producto">
@@ -747,10 +747,10 @@ const ProductsPage = () => {
   const columns = allColumns.filter((c) => visibleColumns.has(c.key));
 
   return (
-    <div style={{ padding: '4px 0' }}>
+    <div style={{ padding: '24px' }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
-          <Title level={3} style={{ margin: 0, color: PRIMARY, fontFamily: "'Inter', sans-serif" }}>
+          <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
             Productos
           </Title>
         </Col>
@@ -818,7 +818,7 @@ const ProductsPage = () => {
 
       {selectedRowKeys.length > 0 && (
         <div style={{
-          background: '#f0f7f4', border: `1.5px solid ${ACTIVE_COLOR}`, borderRadius: 10,
+          background: '#f0f7f4', border: '1.5px solid #52b788', borderRadius: 10,
           padding: '10px 20px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
         }}>
           <Badge count={selectedRowKeys.length} style={{ backgroundColor: PRIMARY }} />
@@ -1245,9 +1245,7 @@ const ProductsPage = () => {
                       <Button size="small"
                         icon={record.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
                         onClick={() => handleToggleVariant(record)}
-                        style={record.is_active
-                          ? { borderColor: '#faad14', color: '#faad14' }
-                          : { borderColor: ACTIVE_COLOR, color: ACTIVE_COLOR }}
+                        style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }}
                       />
                     </Tooltip>
                     {isBurnt ? (
