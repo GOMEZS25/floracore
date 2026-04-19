@@ -387,8 +387,8 @@ const UsersPage = () => {
     {
       title: 'Estado', dataIndex: 'is_active', key: 'is_active', width: 110, align: 'center',
       render: (active) => active
-        ? <Tag color="success" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>Activo</Tag>
-        : <Tag color="error" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>Inactivo</Tag>,
+        ? <Tag color="success">Activo</Tag>
+        : <Tag color="error">Inactivo</Tag>,
     },
     {
       title: 'Fecha Creación', dataIndex: 'created_at', key: 'created_at', width: 150,
@@ -403,7 +403,7 @@ const UsersPage = () => {
           <Tooltip title="Editar">
             <Button size="small" icon={<EditOutlined />}
               onClick={() => openEditModal(record)}
-              style={{ borderColor: PRIMARY, color: PRIMARY }} />
+              style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }} />
           </Tooltip>
 
           {!record.is_super_admin && !isOwnAccount(record) && (
@@ -416,9 +416,7 @@ const UsersPage = () => {
               >
                 <Button size="small"
                   icon={record.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
-                  style={record.is_active
-                    ? { borderColor: '#faad14', color: '#faad14' }
-                    : { borderColor: ACTIVE_COLOR, color: ACTIVE_COLOR }}
+                  style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }}
                 />
               </Popconfirm>
             </Tooltip>
@@ -427,14 +425,14 @@ const UsersPage = () => {
           <Tooltip title="Resetear contraseña">
             <Button size="small" icon={<KeyOutlined />}
               onClick={() => openResetModal(record)}
-              style={{ borderColor: '#722ed1', color: '#722ed1' }} />
+              style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }} />
           </Tooltip>
 
           {!record.is_super_admin && (
             <Tooltip title="Permisos">
               <Button size="small" icon={<SafetyOutlined />}
                 onClick={() => openDrawer(record)}
-                style={{ borderColor: '#08979c', color: '#08979c' }} />
+                style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }} />
             </Tooltip>
           )}
         </Space>
@@ -445,10 +443,10 @@ const UsersPage = () => {
   const columns = allColumns.filter((c) => visibleColumns.has(c.key));
 
   return (
-    <div style={{ padding: '4px 0' }}>
+    <div style={{ padding: '24px' }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
-          <Title level={3} style={{ margin: 0, color: PRIMARY, fontFamily: "'Inter', sans-serif" }}>
+          <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
             Usuarios
           </Title>
         </Col>
@@ -528,7 +526,7 @@ const UsersPage = () => {
 
       {selectedRowKeys.length > 0 && (
         <div style={{
-          background: '#f0f7f4', border: `1.5px solid ${ACTIVE_COLOR}`, borderRadius: 10,
+          background: '#f0f7f4', border: '1.5px solid #52b788', borderRadius: 10,
           padding: '10px 20px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
         }}>
           <Badge count={selectedRowKeys.length} style={{ backgroundColor: PRIMARY }} />

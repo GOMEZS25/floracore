@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `products` ADD COLUMN `product_type` ENUM('SIMPLE', 'SURTIDO', 'BOUQUET') NOT NULL DEFAULT 'SIMPLE';

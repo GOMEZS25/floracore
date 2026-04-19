@@ -6,7 +6,8 @@ import CategoriesPage from './pages/Products/Categories/CategoriesPage';
 import AttributesPage from './pages/Settings/Attributes/AttributesPage';
 import ProductsPage from './pages/Products/ProductsPage';
 import UsersPage from './pages/Settings/Users/UsersPage';
-
+import LocationsPage from './pages/Inventory/Locations/LocationsPage';
+import LotsPage from './pages/Inventory/Lots/LotsPage';
 
 
 
@@ -29,6 +30,23 @@ function App() {
           }
         />
 
+        <Route
+          path="/inventory/locations"
+          element={
+            <AppLayout>
+              <LocationsPage />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/inventory/lots"
+          element={
+            <AppLayout>
+              <LotsPage />
+            </AppLayout>
+          }
+        />
 
         <Route
           path="/products/categories"

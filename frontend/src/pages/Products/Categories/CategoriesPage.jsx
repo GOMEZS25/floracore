@@ -427,13 +427,9 @@ const CategoriesPage = () => {
       align: 'center',
       render: (active) =>
         active ? (
-          <Tag color="success" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>
-            Activo
-          </Tag>
+          <Tag color="success">Activo</Tag>
         ) : (
-          <Tag color="error" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>
-            Inactivo
-          </Tag>
+          <Tag color="error">Inactivo</Tag>
         ),
     },
     {
@@ -458,7 +454,7 @@ const CategoriesPage = () => {
               size="small"
               icon={<EditOutlined />}
               onClick={() => openEditModal(record)}
-              style={{ borderColor: PRIMARY, color: PRIMARY }}
+              style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }}
             />
           </Tooltip>
           <Tooltip title={record.is_active ? 'Inactivar' : 'Activar'}>
@@ -466,11 +462,7 @@ const CategoriesPage = () => {
               size="small"
               icon={record.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
               onClick={() => handleToggle(record)}
-              style={
-                record.is_active
-                  ? { borderColor: '#faad14', color: '#faad14' }
-                  : { borderColor: ACTIVE_COLOR, color: ACTIVE_COLOR }
-              }
+              style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }}
             />
           </Tooltip>
           <Tooltip title="Eliminar">
@@ -513,10 +505,10 @@ const CategoriesPage = () => {
   const showDateFilter = visibleColumns.has('created_at');
 
   return (
-    <div style={{ padding: '4px 0' }}>
+    <div style={{ padding: '24px' }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
-          <Title level={3} style={{ margin: 0, color: PRIMARY, fontFamily: "'Inter', sans-serif" }}>
+          <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600, fontFamily: "'Inter', sans-serif" }}>
             Categorías de Productos
           </Title>
         </Col>
@@ -612,7 +604,7 @@ const CategoriesPage = () => {
         <div
           style={{
             background: '#f0f7f4',
-            border: `1.5px solid ${ACTIVE_COLOR}`,
+            border: '1.5px solid #52b788',
             borderRadius: 10,
             padding: '10px 20px',
             marginBottom: 12,

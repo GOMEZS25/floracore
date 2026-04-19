@@ -424,13 +424,9 @@ const AttributesPage = () => {
       align: 'center',
       render: (active) =>
         active ? (
-          <Tag color="success" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>
-            Activo
-          </Tag>
+          <Tag color="success">Activo</Tag>
         ) : (
-          <Tag color="error" style={{ fontWeight: 600, minWidth: 72, textAlign: 'center' }}>
-            Inactivo
-          </Tag>
+          <Tag color="error">Inactivo</Tag>
         ),
     },
     {
@@ -445,11 +441,7 @@ const AttributesPage = () => {
               size="small"
               icon={record.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
               onClick={() => handleToggleValue(record)}
-              style={
-                record.is_active
-                  ? { borderColor: '#faad14', color: '#faad14' }
-                  : { borderColor: ACTIVE_COLOR, color: ACTIVE_COLOR }
-              }
+              style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }}
             />
           </Tooltip>
           <Popconfirm
@@ -476,12 +468,12 @@ const AttributesPage = () => {
   };
 
   return (
-    <div style={{ padding: '4px 0' }}>
+    <div style={{ padding: '24px' }}>
       <Row align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Title
             level={3}
-            style={{ margin: 0, color: PRIMARY, fontFamily: "'Inter', sans-serif" }}
+            style={{ margin: 0, color: '#595959', fontWeight: 600, fontFamily: "'Inter', sans-serif" }}
           >
             Atributos de Productos
           </Title>
@@ -630,7 +622,7 @@ const AttributesPage = () => {
               style={{
                 margin: '0 12px 8px',
                 background: '#f0f7f4',
-                border: `1.5px solid ${ACTIVE_COLOR}`,
+                border: '1.5px solid #52b788',
                 borderRadius: 8,
                 padding: '8px 12px',
                 display: 'flex',
@@ -780,10 +772,7 @@ const AttributesPage = () => {
                               {attr.name}
                             </Text>
                             <div style={{ marginTop: 2, display: 'flex', gap: 6, alignItems: 'center' }}>
-                              <Tag
-                                color={attr.is_active ? 'success' : 'error'}
-                                style={{ fontSize: 11, lineHeight: '16px', padding: '0 6px' }}
-                              >
+                              <Tag color={attr.is_active ? 'success' : 'error'}>
                                 {attr.is_active ? 'Activo' : 'Inactivo'}
                               </Tag>
                               <Text type="secondary" style={{ fontSize: 11 }}>
@@ -798,7 +787,7 @@ const AttributesPage = () => {
                                   size="small"
                                   icon={<EditOutlined />}
                                   onClick={(e) => startEditAttr(e, attr)}
-                                  style={{ borderColor: PRIMARY, color: PRIMARY, borderRadius: 6 }}
+                                  style={{ borderColor: '#d9d9d9', color: '#8c8c8c', borderRadius: 6 }}
                                 />
                               </Tooltip>
                               <Tooltip title={attr.is_active ? 'Inactivar' : 'Activar'}>
@@ -806,11 +795,7 @@ const AttributesPage = () => {
                                   size="small"
                                   icon={attr.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
                                   onClick={(e) => handleToggleAttr(e, attr)}
-                                  style={
-                                    attr.is_active
-                                      ? { borderColor: '#faad14', color: '#faad14', borderRadius: 6 }
-                                      : { borderColor: ACTIVE_COLOR, color: ACTIVE_COLOR, borderRadius: 6 }
-                                  }
+                                  style={{ borderColor: '#d9d9d9', color: '#8c8c8c', borderRadius: 6 }}
                                 />
                               </Tooltip>
                             </Space>
@@ -967,7 +952,7 @@ const AttributesPage = () => {
                   style={{
                     margin: '8px 16px',
                     background: '#f0f7f4',
-                    border: `1.5px solid ${ACTIVE_COLOR}`,
+                    border: '1.5px solid #52b788',
                     borderRadius: 8,
                     padding: '8px 14px',
                     display: 'flex',
