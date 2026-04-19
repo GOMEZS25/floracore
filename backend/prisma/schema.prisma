@@ -39,6 +39,7 @@ model User {
   sowings          Sowing[]
   sales_orders     SalesOrder[]
   attributes       Attribute[]
+  preferences      UserPreference[]
   permissions      UserPermission[]
 
   @@index([role_id])
@@ -648,3 +649,18 @@ model CompanySettings {
 }
 
 
+
+
+model UserPreference {
+  id               BigInt   @id @default(autoincrement())
+  user_id          BigInt
+  preference_key   String   @db.VarChar(60)
+  preference_value Json
+  updated_at       DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([user_id, preference_key])
+  @@index([user_id])
+  @@map("user_preferences")
+}
