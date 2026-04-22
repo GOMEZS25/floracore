@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3001/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc2NDcwMjc4LCJleHAiOjE3NzY0OTkwNzh9.p2CiRG-Dw2403noLcHpgo-IoF0ndAFZ9F46SA9cTYa0
+@token = <YOUR_JWT_TOKEN>
 
 ### 1. Crear atributo — Color
 POST {{baseUrl}}/attributes

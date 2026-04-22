@@ -102,7 +102,7 @@ const crearProducto = async (req, res) => {
                 sku,
                 category_id: BigInt(category_id),
                 unit_of_measure,
-                is_active: tr,
+                is_active: true,
                 ...(packaging_id && { packaging_id: Number(packaging_id) }),
             },
             select: PRODUCT_SELECT,
@@ -306,7 +306,7 @@ const VARIANT_SELECT = {
     },
 };
 
-// ─── Generar variantes por combinaciones ───────────────────────────────────────
+// Generar variantes por combinaciones
 const generarVariantes = async (req, res) => {
     try {
         const { id } = req.params;

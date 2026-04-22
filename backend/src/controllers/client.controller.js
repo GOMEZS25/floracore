@@ -50,20 +50,29 @@ const crearCliente = async (req, res) => {
 
 // ──────────────────────────────────────────────
 
-// Listar clientes activos
+// Listar clientes activos o inactivos
 const listarClientes = async (req, res) => {
     try {
+        const { is_active } = req.query;
+        let whereClause = {};
+
+        if (is_active === 'true') {
+            whereClause.is_active = true;
+        } else if (is_active === 'false') {
+            whereClause.is_active = false;
+        }
+
         const clientes = await prisma.client.findMany({
-            where: { is_active: true },
-            select: {
-                client_id: true,
-                code: true,
-                name: true,
-                origin: true,
-                currency: true,
-                delivery_terms: true,
-                status: true,
-                created_at: true,
+            where: whereClause,
+            include: {
+                addresses: {
+                    where: { is_active: true },
+                    take: 1
+                },
+                contacts: {
+                    where: { is_active: true },
+                    take: 1
+                }
             },
             orderBy: { name: 'asc' },
         });
@@ -301,9 +310,9 @@ const agregarContacto = async (req, res) => {
         const { id } = req.params;
         const { full_name, email, phone, role } = req.body;
 
-        // Validar campos obligatorios
-        if (!full_name || !email || !phone || !role) {
-            return res.status(400).json({ mensaje: 'Todos los campos de contacto son obligatorios' });
+        // Validar que al menos haya un nombre
+        if (!full_name && !email && !phone && !role) {
+            return res.status(400).json({ mensaje: 'Debe enviar al menos un dato de contacto' });
         }
 
         // Validar que el cliente exista

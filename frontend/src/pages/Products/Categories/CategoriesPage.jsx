@@ -42,6 +42,8 @@ import {
   deleteCategory,
   toggleCategory,
 } from '../../../services/categoryService';
+import useTablePreferences from '../../../hooks/useTablePreferences';
+import TableConfigDrawer from '../../../components/TableConfig/TableConfigDrawer';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -56,7 +58,7 @@ const ALL_COLUMN_KEYS = [
   { key: 'created_at', label: 'Fecha Creación' },
   { key: 'actions', label: 'Acciones' },
 ];
-const DEFAULT_VISIBLE = ['name', 'reference', 'parent', 'is_active', 'actions'];
+const DEFAULT_VISIBLE_KEYS = ['name', 'reference', 'parent', 'is_active', 'actions'];
 
 const PRIMARY = '#1a3c2e';
 const ACTIVE_COLOR = '#52b788';
@@ -98,8 +100,9 @@ const CategoriesPage = () => {
   const [dateRange, setDateRange] = useState(null);
   const [appliedFilters, setAppliedFilters] = useState({ name: '', reference: '', is_active: '' });
 
-  const [visibleColumns, setVisibleColumns] = useState(new Set(DEFAULT_VISIBLE));
-  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
+  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } = 
+    useTablePreferences('columns_categories', DEFAULT_VISIBLE_KEYS);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
@@ -374,23 +377,6 @@ const CategoriesPage = () => {
     });
   };
 
-  const toggleColumn = (key) => {
-    setVisibleColumns((prev) => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
-  };
-
-  const columnMenuItems = ALL_COLUMN_KEYS.map(({ key, label }) => ({
-    key,
-    label: (
-      <Checkbox checked={visibleColumns.has(key)} onChange={() => toggleColumn(key)} style={{ width: '100%' }}>
-        {label}
-      </Checkbox>
-    ),
-  }));
-
   const allColumns = [
     {
       title: 'Nombre',
@@ -478,7 +464,12 @@ const CategoriesPage = () => {
     },
   ];
 
-  const columns = allColumns.filter((c) => visibleColumns.has(c.key));
+  const columns = allColumns
+    .filter((c) => visibleColumns.has(c.key))
+    .map((c) => ({
+      ...c,
+      fixed: pinnedColumns.has(c.key) ? 'left' : undefined,
+    }));
 
   const skeletonRows = Array.from({ length: 6 }, (_, i) => ({
     key: `sk-${i}`,
@@ -514,17 +505,13 @@ const CategoriesPage = () => {
         </Col>
         <Col>
           <Space>
-            <Dropdown
-              open={columnDropdownOpen}
-              onOpenChange={setColumnDropdownOpen}
-              menu={{ items: columnMenuItems }}
-              trigger={['click']}
-              placement="bottomRight"
+            <Button 
+              icon={<SettingOutlined />} 
+              onClick={() => setConfigOpen(true)}
+              style={{ borderRadius: 8, height: 38 }}
             >
-              <Button icon={<SettingOutlined />} style={{ borderRadius: 8, height: 38 }}>
-                Columnas
-              </Button>
-            </Dropdown>
+              Configurar tabla
+            </Button>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -787,6 +774,16 @@ const CategoriesPage = () => {
 
         </Form>
       </Modal>
+
+      <TableConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        columns={ALL_COLUMN_KEYS}
+        visibleColumns={visibleColumns}
+        pinnedColumns={pinnedColumns}
+        onToggleVisible={toggleVisible}
+        onTogglePinned={togglePinned}
+      />
     </div>
   );
 };

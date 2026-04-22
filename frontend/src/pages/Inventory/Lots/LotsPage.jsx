@@ -11,6 +11,8 @@ import {
 import { jwtDecode } from 'jwt-decode';
 
 import lotService from '../../../services/lotService';
+import useTablePreferences from '../../../hooks/useTablePreferences';
+import TableConfigDrawer from '../../../components/TableConfig/TableConfigDrawer';
 
 const { RangePicker } = DatePicker;
 const { Option, OptGroup } = Select;
@@ -84,7 +86,9 @@ const LotsPage = () => {
     show_box_type: false
   });
 
-  const [visibleColumns, setVisibleColumns] = useState(DEFAULT_VISIBLE_COLUMNS);
+  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } =
+    useTablePreferences('columns_lots', DEFAULT_VISIBLE_COLUMNS);
+  const [configOpen, setConfigOpen] = useState(false);
   const [userId, setUserId] = useState(null);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -112,8 +116,6 @@ const LotsPage = () => {
         const decoded = jwtDecode(token);
         const uid = decoded.id || decoded.user_id;
         setUserId(uid);
-        const savedCols = localStorage.getItem(`columns_lots_${uid}`);
-        if (savedCols) setVisibleColumns(JSON.parse(savedCols));
       } catch (error) {
         console.error("Invalid token", error);
       }
@@ -182,16 +184,6 @@ const LotsPage = () => {
     } else {
       setFilters(prev => ({ ...prev, fecha_desde: null, fecha_hasta: null }));
     }
-  };
-
-  const toggleColumn = (key) => {
-    let newCols = visibleColumns.includes(key)
-      ? visibleColumns.filter(c => c !== key)
-      : [...visibleColumns, key];
-
-    if (!newCols.includes('actions')) newCols.push('actions');
-    setVisibleColumns(newCols);
-    if (userId) localStorage.setItem(`columns_lots_${userId}`, JSON.stringify(newCols));
   };
 
   const handleDelete = async (loteId) => {
@@ -496,7 +488,12 @@ const LotsPage = () => {
     }
   ];
 
-  const columns = columnsDef.filter(c => visibleColumns.includes(c.key));
+  const columns = columnsDef
+    .filter(c => visibleColumns.has(c.key))
+    .map(c => ({
+      ...c,
+      fixed: pinnedColumns.has(c.key) ? 'left' : undefined,
+    }));
 
   return (
     <div style={{ padding: '24px' }}>
@@ -559,26 +556,13 @@ const LotsPage = () => {
             <RangePicker style={{ width: '100%' }} onChange={handleDateChange} />
           </Col>
           <Col xs={24} sm={12} md={2}>
-            <Popover
-              content={
-                <Space direction="vertical">
-                  {ALL_COLUMNS.filter(c => c.key !== 'actions').map(col => (
-                    <Checkbox
-                      key={col.key}
-                      checked={visibleColumns.includes(col.key)}
-                      onChange={() => toggleColumn(col.key)}
-                    >
-                      {col.title}
-                    </Checkbox>
-                  ))}
-                </Space>
-              }
-              title="Columnas Visibles"
-              trigger="click"
-              placement="bottomRight"
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => setConfigOpen(true)}
+              style={{ borderRadius: 8, height: 38 }}
             >
-              <Button icon={<SettingOutlined />}>Columnas</Button>
-            </Popover>
+              Configurar Vista
+            </Button>
           </Col>
         </Row>
       </Card>
@@ -865,6 +849,16 @@ const LotsPage = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      <TableConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        columns={ALL_COLUMNS.map(c => ({ key: c.key, label: c.title }))}
+        visibleColumns={visibleColumns}
+        pinnedColumns={pinnedColumns}
+        onToggleVisible={toggleVisible}
+        onTogglePinned={togglePinned}
+      />
     </div>
   );
 };

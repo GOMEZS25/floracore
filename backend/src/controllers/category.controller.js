@@ -66,6 +66,7 @@ const crearCategoria = async (req, res) => {
                 reference,
                 created_by: createdBy,
                 ...(parentIdBigInt !== null && { parent_id: parentIdBigInt }),
+
             },
             select: {
                 category_id: true,
@@ -89,7 +90,7 @@ const crearCategoria = async (req, res) => {
     }
 };
 
-// ─── Listar categorías ─────────────────────────────────────────────────────────
+//Listar categorías
 const listarCategorias = async (req, res) => {
     try {
         const categorias = await prisma.category.findMany({
@@ -117,7 +118,7 @@ const listarCategorias = async (req, res) => {
     }
 };
 
-// ─── Actualizar categoría ──────────────────────────────────────────────────────
+//  Actualizar categoría
 const actualizarCategoria = async (req, res) => {
     try {
         const { id: categoryId } = req.params;
@@ -225,7 +226,7 @@ const actualizarCategoria = async (req, res) => {
     }
 };
 
-// ─── Eliminar categoría ────────────────────────────────────────────────────────
+//  Eliminar categoría 
 const eliminarCategoria = async (req, res) => {
     try {
         const { id: categoryId } = req.params;
