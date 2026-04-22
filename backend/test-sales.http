@@ -1,13 +1,13 @@
 @baseUrl = http://localhost:3001/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc1ODcyMDAyLCJleHAiOjE3NzU5MDA4MDJ9.vBUrwh2VWliJdqtUgbv3PxA7ZIdr5bU5ACEDOV3Glw8
+@token = <YOUR_JWT_TOKEN>
 
 ### 1. Login
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 { 
-    "email": "gomezse97@gmail.com", 
-    "password": "Temp1234" 
+    "email": "test@example.com", 
+    "password": "Password123" 
 }
 
 ### 2. Crear TransactionCategory
@@ -24,12 +24,12 @@ Authorization: Bearer {{token}}
 ### 3. Listar TransactionCategories
 GET {{baseUrl}}/transaction-categories
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc1ODcyMDAyLCJleHAiOjE3NzU5MDA4MDJ9.vBUrwh2VWliJdqtUgbv3PxA7ZIdr5bU5ACEDOV3Glw8
+Authorization: Bearer {{token}}
 
 ### 4. Crear SalesOrder con 2 detalles
 POST {{baseUrl}}/sales-orders
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJyb2wiOiIxIiwiaWF0IjoxNzc1ODcyMDAyLCJleHAiOjE3NzU5MDA4MDJ9.vBUrwh2VWliJdqtUgbv3PxA7ZIdr5bU5ACEDOV3Glw8
+Authorization: Bearer {{token}}
 
 {
     "client_id": 1,

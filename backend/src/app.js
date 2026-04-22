@@ -15,6 +15,8 @@ const sowingRoutes = require('./routes/sowing.routes');
 const transactionCategoryRoutes = require('./routes/transactionCategory.routes');
 const salesOrderRoutes = require('./routes/salesOrder.routes');
 const attributeRoutes = require('./routes/attribute.routes');
+const companySettingsRoutes = require('./routes/companySettings.routes');
+const userPreferenceRoutes = require('./routes/userPreference.routes')
 
 const app = express();
 
@@ -33,8 +35,11 @@ app.use('/api/lot/:lote_id/movimiento', movimientoRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/sowings', sowingRoutes);
 app.use('/api/transaction-categories', transactionCategoryRoutes);
-app.use('/api/sales-orders', salesOrderRoutes);
+app.use('/api/sales', salesOrderRoutes);
 app.use('/api/attributes', attributeRoutes);
+app.use('/api/settings', companySettingsRoutes);
+app.use('/api/preferences', userPreferenceRoutes)
+
 
 // Ruta de prueba
 app.get('/', (req, res) => {

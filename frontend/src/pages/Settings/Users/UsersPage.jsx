@@ -14,6 +14,8 @@ import {
   getUsers, createUser, updateUser, toggleUser,
   resetPassword, getUserPermissions, updateUserPermissions, getRoles,
 } from '../../../services/userService';
+import useTablePreferences from '../../../hooks/useTablePreferences';
+import TableConfigDrawer from '../../../components/TableConfig/TableConfigDrawer';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -47,7 +49,7 @@ const ALL_COLUMN_KEYS = [
   { key: 'created_at', label: 'Fecha Creación' },
   { key: 'actions', label: 'Acciones' },
 ];
-const DEFAULT_VISIBLE = new Set(['full_name', 'email', 'role', 'is_active', 'actions']);
+const DEFAULT_VISIBLE_KEYS = ['full_name', 'email', 'role', 'is_active', 'actions'];
 
 function getLoggedUserId() {
   try {
@@ -83,8 +85,9 @@ const UsersPage = () => {
   const [inputStatus, setInputStatus] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({});
 
-  const [visibleColumns, setVisibleColumns] = useState(new Set(DEFAULT_VISIBLE));
-  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
+  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } = 
+    useTablePreferences('columns_users', DEFAULT_VISIBLE_KEYS);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -150,23 +153,6 @@ const UsersPage = () => {
   };
 
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
-
-  const toggleColumn = (key) => {
-    setVisibleColumns((prev) => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
-  };
-
-  const columnMenuItems = ALL_COLUMN_KEYS.map(({ key, label }) => ({
-    key,
-    label: (
-      <Checkbox checked={visibleColumns.has(key)} onChange={() => toggleColumn(key)} style={{ width: '100%' }}>
-        {label}
-      </Checkbox>
-    ),
-  }));
 
   const openCreateModal = () => {
     setModalMode('create');
@@ -440,7 +426,12 @@ const UsersPage = () => {
     },
   ];
 
-  const columns = allColumns.filter((c) => visibleColumns.has(c.key));
+  const columns = allColumns
+    .filter((c) => visibleColumns.has(c.key))
+    .map((c) => ({
+      ...c,
+      fixed: pinnedColumns.has(c.key) ? 'left' : undefined,
+    }));
 
   return (
     <div style={{ padding: '24px' }}>
@@ -452,30 +443,13 @@ const UsersPage = () => {
         </Col>
         <Col>
           <Space>
-            <Button.Group>
-              {ALL_COLUMN_KEYS.map(({ key, label }) => (
-                <Tooltip key={key} title={label}>
-                  <Button
-                    size="small"
-                    icon={<SettingOutlined />}
-                    onClick={() => setColumnDropdownOpen((v) => !v)}
-                    style={{ display: 'none' }}
-                  />
-                </Tooltip>
-              ))}
-            </Button.Group>
-            <Select
-              open={columnDropdownOpen}
-              onDropdownVisibleChange={setColumnDropdownOpen}
-              mode="multiple"
-              maxTagCount={0}
-              maxTagPlaceholder="Columnas"
-              value={[...visibleColumns]}
-              onChange={(vals) => setVisibleColumns(new Set(vals))}
-              options={ALL_COLUMN_KEYS.map(({ key, label }) => ({ value: key, label }))}
-              style={{ minWidth: 110 }}
-              suffixIcon={<SettingOutlined />}
-            />
+            <Button 
+              icon={<SettingOutlined />} 
+              onClick={() => setConfigOpen(true)}
+              style={{ borderRadius: 8, height: 38 }}
+            >
+              Configurar tabla
+            </Button>
             <Button
               type="primary" icon={<PlusOutlined />}
               onClick={openCreateModal}
@@ -752,6 +726,16 @@ const UsersPage = () => {
           />
         )}
       </Drawer>
+
+      <TableConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        columns={ALL_COLUMN_KEYS}
+        visibleColumns={visibleColumns}
+        pinnedColumns={pinnedColumns}
+        onToggleVisible={toggleVisible}
+        onTogglePinned={togglePinned}
+      />
     </div>
   );
 };

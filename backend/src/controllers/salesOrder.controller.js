@@ -2,14 +2,29 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { serializeBigInt } = require('../utils/bigint.helper');
 
+// Obtener siguiente número de orden
+const getNextOrderNumber = async (req, res) => {
+  try {
+    const lastOrder = await prisma.salesOrder.findFirst({
+      orderBy: { order_number: 'desc' },
+      select: { order_number: true }
+    });
+    const nextNumber = lastOrder ? lastOrder.order_number + 1 : 1;
+    return res.status(200).json({ data: { order_number: nextNumber } });
+  } catch (error) {
+    console.error('Error al obtener siguiente número de orden:', error.message);
+    return res.status(500).json({ mensaje: 'Error interno del servidor' });
+  }
+};
+
 // Crear Orden de Venta
 const crearOrden = async (req, res) => {
     try {
         const { client_id, client_address_id, transaction_category_id, delivery_date, notes, document_url, details } = req.body;
 
         // Validaciones básicas
-        if (!client_id || !client_address_id || !delivery_date || !details || !Array.isArray(details) || details.length === 0) {
-            return res.status(400).json({ mensaje: 'Faltan campos obligatorios o los detalles están vacíos' });
+        if (!client_id || !client_address_id || !delivery_date || !details || !Array.isArray(details)) {
+            return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
         }
 
         let ordenGenerada;
@@ -79,6 +94,16 @@ const crearOrden = async (req, res) => {
                     data: {
                         cantidad_disponible: { decrement: Number(item.quantity) },
                         cantidad_reservada: { increment: Number(item.quantity) }
+                    }
+                });
+
+                await tx.stockMovement.create({
+                    data: {
+                        lote_id: BigInt(item.lote_id),
+                        movement_type: 'RESERVA',
+                        quantity: Number(item.quantity),
+                        notes: `Reserva por orden #${newOrderNumber}`,
+                        created_by: BigInt(req.usuario.id)
                     }
                 });
             }
@@ -242,6 +267,16 @@ const despacharOrden = async (req, res) => {
                         cantidad_reservada: { decrement: Number(item.quantity) }
                     }
                 });
+
+                await tx.stockMovement.create({
+                    data: {
+                        lote_id: BigInt(item.lote_id),
+                        movement_type: 'VENTA',
+                        quantity: Number(item.quantity),
+                        notes: `Despacho por orden #${orden.order_number}`,
+                        created_by: BigInt(req.usuario.id)
+                    }
+                });
             }
         });
 
@@ -292,6 +327,16 @@ const cancelarOrden = async (req, res) => {
                         cantidad_disponible: { increment: Number(item.quantity) }
                     }
                 });
+
+                await tx.stockMovement.create({
+                    data: {
+                        lote_id: BigInt(item.lote_id),
+                        movement_type: 'CANCELACION',
+                        quantity: Number(item.quantity),
+                        notes: `Cancelación de orden #${orden.order_number}`,
+                        created_by: BigInt(req.usuario.id)
+                    }
+                });
             }
         });
 
@@ -307,6 +352,7 @@ const cancelarOrden = async (req, res) => {
 };
 
 module.exports = {
+    getNextOrderNumber,
     crearOrden,
     listarOrdenes,
     obtenerOrden,

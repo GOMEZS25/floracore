@@ -59,6 +59,8 @@ import {
 } from '../../services/productService';
 import { getCategories } from '../../services/categoryService';
 import { getAttributes, updateAttributeOrder } from '../../services/attributeService';
+import useTablePreferences from '../../hooks/useTablePreferences';
+import TableConfigDrawer from '../../components/TableConfig/TableConfigDrawer';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -93,7 +95,7 @@ const ALL_COLUMN_KEYS = [
   { key: 'created_at', label: 'Fecha Creación' },
   { key: 'actions', label: 'Acciones' },
 ];
-const DEFAULT_VISIBLE = new Set(['name', 'sku', 'category', 'unit_of_measure', 'is_active', 'variants', 'actions']);
+const DEFAULT_VISIBLE_KEYS = ['name', 'sku', 'category', 'unit_of_measure', 'is_active', 'variants', 'actions'];
 
 const UNITS = ['TALLO', 'RAMO', 'CAJA'];
 
@@ -113,8 +115,9 @@ const ProductsPage = () => {
   const [inputStatus, setInputStatus] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({});
 
-  const [visibleColumns, setVisibleColumns] = useState(new Set(DEFAULT_VISIBLE));
-  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
+  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } = 
+    useTablePreferences('columns_products', DEFAULT_VISIBLE_KEYS);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const [categories, setCategories] = useState([]);
   const [packagingList, setPackagingList] = useState([]);
@@ -234,23 +237,6 @@ const ProductsPage = () => {
   };
 
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleSearch(); };
-
-  const toggleColumn = (key) => {
-    setVisibleColumns((prev) => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
-  };
-
-  const columnMenuItems = ALL_COLUMN_KEYS.map(({ key, label }) => ({
-    key,
-    label: (
-      <Checkbox checked={visibleColumns.has(key)} onChange={() => toggleColumn(key)} style={{ width: '100%' }}>
-        {label}
-      </Checkbox>
-    ),
-  }));
 
   const openCreateWizard = async () => {
     setWizardMode('create');
@@ -744,7 +730,12 @@ const ProductsPage = () => {
       },
     },
   ];
-  const columns = allColumns.filter((c) => visibleColumns.has(c.key));
+  const columns = allColumns
+    .filter((c) => visibleColumns.has(c.key))
+    .map((c) => ({
+      ...c,
+      fixed: pinnedColumns.has(c.key) ? 'left' : undefined,
+    }));
 
   return (
     <div style={{ padding: '24px' }}>
@@ -756,10 +747,13 @@ const ProductsPage = () => {
         </Col>
         <Col>
           <Space>
-            <Dropdown open={columnDropdownOpen} onOpenChange={setColumnDropdownOpen}
-              menu={{ items: columnMenuItems }} trigger={['click']} placement="bottomRight">
-              <Button icon={<SettingOutlined />} style={{ borderRadius: 8, height: 38 }}>Columnas</Button>
-            </Dropdown>
+            <Button 
+              icon={<SettingOutlined />} 
+              onClick={() => setConfigOpen(true)}
+              style={{ borderRadius: 8, height: 38 }}
+            >
+              Configurar tabla
+            </Button>
             <Button
               type="primary" icon={<PlusOutlined />}
               onClick={openCreateWizard}
@@ -1267,6 +1261,16 @@ const ProductsPage = () => {
           ]}
         />
       </Drawer>
+
+      <TableConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        columns={ALL_COLUMN_KEYS}
+        visibleColumns={visibleColumns}
+        pinnedColumns={pinnedColumns}
+        onToggleVisible={toggleVisible}
+        onTogglePinned={togglePinned}
+      />
     </div>
   );
 };

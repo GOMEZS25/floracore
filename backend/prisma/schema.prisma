@@ -53,7 +53,7 @@ model Category {
   category_id BigInt   @id @default(autoincrement())
   name        String   @unique @db.VarChar(60)
   reference   String   @unique @db.VarChar(20)
-  is_active   Boolean  @default(false)  // ← cambiar a false
+  is_active   Boolean  @default(true)
   created_by  BigInt
   created_at  DateTime @default(now())
   parent_id   BigInt?  // 
@@ -367,6 +367,8 @@ enum MovementType {
   VENTA
   DESPERDICIO
   RESERVA
+  CANCELACION
+  AJUSTE
 }
 
 enum TipoCaja {
@@ -541,8 +543,8 @@ enum ClientStatus {
 }
 
 enum AddressType {
-  BILLING
-  SHIPPING
+  FISCAL
+  ENTREGA
 }
 
 // ATRIBUTOS Y VARIANTES

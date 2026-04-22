@@ -8,8 +8,9 @@ import ProductsPage from './pages/Products/ProductsPage';
 import UsersPage from './pages/Settings/Users/UsersPage';
 import LocationsPage from './pages/Inventory/Locations/LocationsPage';
 import LotsPage from './pages/Inventory/Lots/LotsPage';
-
-
+import ClientsPage from './pages/Sales/Clients/ClientsPage';
+import SalesOrdersPage from './pages/Sales/Orders/SalesOrdersPage';
+import SalesOrderFormPage from './pages/Sales/Orders/SalesOrderFormPage';
 
 
 function App() {
@@ -62,6 +63,42 @@ function App() {
           element={
             <AppLayout>
               <ProductsPage />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/sales/clients"
+          element={
+            <AppLayout>
+              <ClientsPage />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/sales/orders"
+          element={
+            <AppLayout>
+              <SalesOrdersPage />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/sales/orders/new"
+          element={
+            <AppLayout>
+              <SalesOrderFormPage />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/sales/orders/:id"
+          element={
+            <AppLayout>
+              <SalesOrderFormPage />
             </AppLayout>
           }
         />
