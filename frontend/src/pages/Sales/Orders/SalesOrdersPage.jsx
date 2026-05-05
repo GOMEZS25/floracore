@@ -231,7 +231,7 @@ const SalesOrdersPage = () => {
             <Button
               size="small"
               icon={<EyeOutlined />}
-              onClick={() => navigate(`/sales/orders/${record.sales_order_id || record.id}`)}
+              onClick={() => navigate(`/sales/orders/${record.order_id}`)}
               style={{ borderColor: '#d9d9d9', color: '#1a3c2e' }}
             />
           </Tooltip>
@@ -266,7 +266,7 @@ const SalesOrdersPage = () => {
             <Tooltip title="Cancelar Orden">
               <Popconfirm
                 title="¿Cancelar esta orden? Esta acción no se puede deshacer."
-                onConfirm={() => handleCancel(record.sales_order_id || record.id)}
+                onConfirm={() => handleCancel(record.order_id)}
                 okText="Sí"
                 cancelText="No"
               >

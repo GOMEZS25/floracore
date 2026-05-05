@@ -39,6 +39,26 @@ const salesService = {
   getTransactionCategories: async () => {
     const response = await axiosInstance.get('/sales/categories');
     return response.data;
+  },
+
+  actualizarHeader: async (id, data) => {
+    const response = await axiosInstance.patch(`/sales/orders/${id}/update-header`, data);
+    return response.data;
+  },
+
+  autoGuardarOrden: async (data) => {
+    const response = await axiosInstance.post('/sales/orders/auto-save', data);
+    return response.data;
+  },
+
+  agregarLinea: async (orderId, data) => {
+    const response = await axiosInstance.post(`/sales/orders/${orderId}/details`, data);
+    return response.data;
+  },
+
+  eliminarLinea: async (detailId) => {
+    const response = await axiosInstance.delete(`/sales/orders/details/${detailId}`);
+    return response.data;
   }
 };
 
