@@ -115,7 +115,7 @@ const ProductsPage = () => {
   const [inputStatus, setInputStatus] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({});
 
-  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } = 
+  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } =
     useTablePreferences('columns_products', DEFAULT_VISIBLE_KEYS);
   const [configOpen, setConfigOpen] = useState(false);
 
@@ -747,8 +747,8 @@ const ProductsPage = () => {
         </Col>
         <Col>
           <Space>
-            <Button 
-              icon={<SettingOutlined />} 
+            <Button
+              icon={<SettingOutlined />}
               onClick={() => setConfigOpen(true)}
               style={{ borderRadius: 8, height: 38 }}
             >

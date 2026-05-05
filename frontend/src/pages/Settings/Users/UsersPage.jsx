@@ -85,7 +85,7 @@ const UsersPage = () => {
   const [inputStatus, setInputStatus] = useState('');
   const [appliedFilters, setAppliedFilters] = useState({});
 
-  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } = 
+  const { visibleColumns, pinnedColumns, toggleVisible, togglePinned } =
     useTablePreferences('columns_users', DEFAULT_VISIBLE_KEYS);
   const [configOpen, setConfigOpen] = useState(false);
 
@@ -443,8 +443,8 @@ const UsersPage = () => {
         </Col>
         <Col>
           <Space>
-            <Button 
-              icon={<SettingOutlined />} 
+            <Button
+              icon={<SettingOutlined />}
               onClick={() => setConfigOpen(true)}
               style={{ borderRadius: 8, height: 38 }}
             >

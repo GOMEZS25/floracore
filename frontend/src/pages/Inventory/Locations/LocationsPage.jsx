@@ -312,187 +312,187 @@ const LocationsPage = () => {
 
 
 
-return (
-  <div style={{ padding: '24px' }}>
-    <Card style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={3} style={{ color: '#595959', fontWeight: 600, margin: 0 }}>Ubicaciones</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => openModal()}
-          style={{ backgroundColor: '#1a3c2e', border: 'none', borderRadius: '6px' }}
-        >
-          Nueva Ubicación
-        </Button>
-      </div>
-
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Input
-          placeholder="Buscar por nombre..."
-          value={filters.name}
-          onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-          onPressEnter={handleSearch}
-          allowClear
-          style={{ width: 220 }}
-        />
-        <Select
-          placeholder="Filtrar por tipo"
-          value={filters.type || undefined}
-          onChange={(val) => setFilters({ ...filters, type: val || '' })}
-          style={{ width: 150 }}
-          allowClear
-        >
-          <Option value="FINCA">Finca</Option>
-          <Option value="BLOQUE">Bloque</Option>
-          <Option value="CAMA">Cama</Option>
-        </Select>
-        <Select
-          placeholder="Estado"
-          value={filters.is_active === '' ? 'todos' : filters.is_active}
-          onChange={(val) => setFilters({ ...filters, is_active: val === 'todos' ? '' : val })}
-          style={{ width: 120 }}
-        >
-          <Option value="todos">Todos</Option>
-          <Option value={true}>Activo</Option>
-          <Option value={false}>Inactivo</Option>
-        </Select>
-        <Button type="primary" style={{ backgroundColor: '#52b788', border: 'none' }} icon={<SearchOutlined />} onClick={handleSearch}>
-          Buscar
-        </Button>
-
-        <Button
-          icon={<SettingOutlined />}
-          onClick={() => setConfigOpen(true)}
-          style={{ borderRadius: 8, height: 38 }}
-        >
-          Configurar tabla
-        </Button>
-      </Space>
-
-      {selectedRowKeys.length > 0 && (
-        <div style={{ marginBottom: 16, padding: '8px 16px', background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: '4px' }}>
-          <span style={{ marginRight: 16 }}>{selectedRowKeys.length} items seleccionados</span>
-          <Button size="small" onClick={() => handleMassToggle(true)} style={{ marginRight: 8, color: '#52b788', borderColor: '#52b788' }}>
-            Procesar (Toggle)
-          </Button>
-          <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>
-            Desmarcar todos
+  return (
+    <div style={{ padding: '24px' }}>
+      <Card style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <Title level={3} style={{ color: '#595959', fontWeight: 600, margin: 0 }}>Ubicaciones</Title>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => openModal()}
+            style={{ backgroundColor: '#1a3c2e', border: 'none', borderRadius: '6px' }}
+          >
+            Nueva Ubicación
           </Button>
         </div>
-      )}
 
-      <Table
-        columns={activeColumns}
-        dataSource={treeData}
-        loading={loading}
-        rowKey="key"
-        rowSelection={{
-          selectedRowKeys,
-          onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
-        }}
-        pagination={{
-          defaultPageSize: 25,
-          pageSizeOptions: ['25', '50', '100'],
-          showSizeChanger: true,
-          showTotal: () => `Mostrando ${treeData.length} de ${locations.length} ubicaciones`
-        }}
-        expandable={{
-          // Opcional: icon customizado si lo requieren
-        }}
-      />
-    </Card>
-
-    <Modal
-      title={editingLocation ? "Editar Ubicación" : "Nueva Ubicación"}
-      open={isModalVisible}
-      onCancel={closeModal}
-      footer={null}
-      destroyOnClose
-    >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleModalSubmit}
-      >
-        <Form.Item
-          name="type"
-          label="Tipo"
-          rules={[{ required: true, message: 'Por favor seleccione el tipo' }]}
-        >
+        <Space style={{ marginBottom: 16 }} wrap>
+          <Input
+            placeholder="Buscar por nombre..."
+            value={filters.name}
+            onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+            onPressEnter={handleSearch}
+            allowClear
+            style={{ width: 220 }}
+          />
           <Select
-            placeholder="Seleccione el tipo de ubicación"
-            onChange={onTypeChange}
-            disabled={!!editingLocation} // Usualmente no se permite cambiar de finca a cama a la ligera
+            placeholder="Filtrar por tipo"
+            value={filters.type || undefined}
+            onChange={(val) => setFilters({ ...filters, type: val || '' })}
+            style={{ width: 150 }}
+            allowClear
           >
             <Option value="FINCA">Finca</Option>
             <Option value="BLOQUE">Bloque</Option>
             <Option value="CAMA">Cama</Option>
           </Select>
-        </Form.Item>
-
-        <Form.Item
-          name="name"
-          label="Nombre"
-          rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
-        >
-          <Input placeholder="Ej. Bloque 1, Cama A..." />
-        </Form.Item>
-
-        {selectedType && selectedType !== 'FINCA' && (
-          <Form.Item
-            name="parent_id"
-            label={selectedType === 'BLOQUE' ? 'Finca Padre' : 'Bloque Padre'}
-            rules={[{
-              required: true,
-              message: selectedType === 'BLOQUE' ? 'Selecciona una Finca padre' : 'Selecciona un Bloque padre'
-            }]}
+          <Select
+            placeholder="Estado"
+            value={filters.is_active === '' ? 'todos' : filters.is_active}
+            onChange={(val) => setFilters({ ...filters, is_active: val === 'todos' ? '' : val })}
+            style={{ width: 120 }}
           >
-            <Select
-              placeholder={`Seleccione el padre (${selectedType === 'BLOQUE' ? 'Finca' : 'Bloque'})`}
-              showSearch
-              filterOption={(input, option) =>
-                (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {parentOptions.map(loc => (
-                <Option key={loc.location_id.toString()} value={loc.location_id.toString()}>
-                  {loc.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+            <Option value="todos">Todos</Option>
+            <Option value={true}>Activo</Option>
+            <Option value={false}>Inactivo</Option>
+          </Select>
+          <Button type="primary" style={{ backgroundColor: '#52b788', border: 'none' }} icon={<SearchOutlined />} onClick={handleSearch}>
+            Buscar
+          </Button>
+
+          <Button
+            icon={<SettingOutlined />}
+            onClick={() => setConfigOpen(true)}
+            style={{ borderRadius: 8, height: 38 }}
+          >
+            Configurar tabla
+          </Button>
+        </Space>
+
+        {selectedRowKeys.length > 0 && (
+          <div style={{ marginBottom: 16, padding: '8px 16px', background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: '4px' }}>
+            <span style={{ marginRight: 16 }}>{selectedRowKeys.length} items seleccionados</span>
+            <Button size="small" onClick={() => handleMassToggle(true)} style={{ marginRight: 8, color: '#52b788', borderColor: '#52b788' }}>
+              Procesar (Toggle)
+            </Button>
+            <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>
+              Desmarcar todos
+            </Button>
+          </div>
         )}
 
-        <Form.Item
-          name="description"
-          label="Descripción"
+        <Table
+          columns={activeColumns}
+          dataSource={treeData}
+          loading={loading}
+          rowKey="key"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
+          }}
+          pagination={{
+            defaultPageSize: 25,
+            pageSizeOptions: ['25', '50', '100'],
+            showSizeChanger: true,
+            showTotal: () => `Mostrando ${treeData.length} de ${locations.length} ubicaciones`
+          }}
+          expandable={{
+            // Opcional: icon customizado si lo requieren
+          }}
+        />
+      </Card>
+
+      <Modal
+        title={editingLocation ? "Editar Ubicación" : "Nueva Ubicación"}
+        open={isModalVisible}
+        onCancel={closeModal}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleModalSubmit}
         >
-          <Input.TextArea rows={3} placeholder="Ingrese descripción detallada (Opcional)" />
-        </Form.Item>
+          <Form.Item
+            name="type"
+            label="Tipo"
+            rules={[{ required: true, message: 'Por favor seleccione el tipo' }]}
+          >
+            <Select
+              placeholder="Seleccione el tipo de ubicación"
+              onChange={onTypeChange}
+              disabled={!!editingLocation} // Usualmente no se permite cambiar de finca a cama a la ligera
+            >
+              <Option value="FINCA">Finca</Option>
+              <Option value="BLOQUE">Bloque</Option>
+              <Option value="CAMA">Cama</Option>
+            </Select>
+          </Form.Item>
 
-        <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-          <Button onClick={closeModal} style={{ marginRight: 8 }}>
-            Cancelar
-          </Button>
-          <Button type="primary" htmlType="submit" style={{ backgroundColor: '#1a3c2e' }} loading={loading}>
-            Guardar
-          </Button>
-        </Form.Item>
-      </Form>
-    </Modal>
+          <Form.Item
+            name="name"
+            label="Nombre"
+            rules={[{ required: true, message: 'Por favor ingrese el nombre' }]}
+          >
+            <Input placeholder="Ej. Bloque 1, Cama A..." />
+          </Form.Item>
 
-    <TableConfigDrawer
-      open={configOpen}
-      onClose={() => setConfigOpen(false)}
-      columns={ALL_COLUMN_KEYS}
-      visibleColumns={visibleColumns}
-      pinnedColumns={pinnedColumns}
-      onToggleVisible={toggleVisible}
-      onTogglePinned={togglePinned}
-    />
-  </div>
-);
+          {selectedType && selectedType !== 'FINCA' && (
+            <Form.Item
+              name="parent_id"
+              label={selectedType === 'BLOQUE' ? 'Finca Padre' : 'Bloque Padre'}
+              rules={[{
+                required: true,
+                message: selectedType === 'BLOQUE' ? 'Selecciona una Finca padre' : 'Selecciona un Bloque padre'
+              }]}
+            >
+              <Select
+                placeholder={`Seleccione el padre (${selectedType === 'BLOQUE' ? 'Finca' : 'Bloque'})`}
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {parentOptions.map(loc => (
+                  <Option key={loc.location_id.toString()} value={loc.location_id.toString()}>
+                    {loc.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
+          <Form.Item
+            name="description"
+            label="Descripción"
+          >
+            <Input.TextArea rows={3} placeholder="Ingrese descripción detallada (Opcional)" />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
+            <Button onClick={closeModal} style={{ marginRight: 8 }}>
+              Cancelar
+            </Button>
+            <Button type="primary" htmlType="submit" style={{ backgroundColor: '#1a3c2e' }} loading={loading}>
+              Guardar
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <TableConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        columns={ALL_COLUMN_KEYS}
+        visibleColumns={visibleColumns}
+        pinnedColumns={pinnedColumns}
+        onToggleVisible={toggleVisible}
+        onTogglePinned={togglePinned}
+      />
+    </div>
+  );
 };
 
 export default LocationsPage;

@@ -2,10 +2,15 @@
 node_modules/
 
 
-.env
+node_modules/
 
 dist/
 build/
 
 .DS_Store
 Thumbs.db
+
+
+.gemini/
+.claude/
+.agent/
