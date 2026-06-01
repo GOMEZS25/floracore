@@ -2,24 +2,23 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { serializeBigInt } = require('../utils/bigint.helper');
 
-// ── Helper: generar iniciales (max N chars, uppercase) ─────────────────────────
+// Helper: generar iniciales (max N chars, uppercase)
 const iniciales = (texto, max = 3) =>
-    texto
-        .trim()
+    texto.trim()
         .split(/\s+/)
         .map((w) => w[0])
         .join('')
         .toUpperCase()
         .slice(0, max) || texto.slice(0, max).toUpperCase();
 
-// ── Helper: producto cartesiano de arrays ──────────────────────────────────────
+// Helper: producto cartesiano de arrays
 const cartesiano = (...arrays) =>
     arrays.reduce((acc, arr) =>
         acc.flatMap((combo) => arr.map((item) => [...combo, item])),
         [[]]
     );
 
-// ── Helper: select estándar de producto ───────────────────────────────────────
+// Helper: select estándar de producto 
 const PRODUCT_SELECT = {
     product_id: true,
     sku: true,
@@ -118,7 +117,7 @@ const crearProducto = async (req, res) => {
     }
 };
 
-// ─── Listar productos ──────────────────────────────────────────────────────────
+// Listar productos
 const listarProductos = async (req, res) => {
     try {
         const { name, sku, category_id, unit_of_measure, is_active } = req.query;
@@ -144,7 +143,7 @@ const listarProductos = async (req, res) => {
     }
 };
 
-// ─── Obtener producto por ID ───────────────────────────────────────────────────
+// Obtener producto por ID
 const obtenerProducto = async (req, res) => {
     try {
         const { id } = req.params;
@@ -164,7 +163,7 @@ const obtenerProducto = async (req, res) => {
     }
 };
 
-// ─── Actualizar producto ───────────────────────────────────────────────────────
+// Actualizar producto
 const actualizarProducto = async (req, res) => {
     try {
         const { id } = req.params;
@@ -221,7 +220,7 @@ const actualizarProducto = async (req, res) => {
     }
 };
 
-// ─── Toggle producto ───────────────────────────────────────────────────────────
+// Toggle producto
 const toggleProducto = async (req, res) => {
     try {
         const { id } = req.params;
@@ -247,7 +246,7 @@ const toggleProducto = async (req, res) => {
     }
 };
 
-// ─── Eliminar producto (lógica existente conservada) ──────────────────────────
+// Eliminar producto
 const eliminarProducto = async (req, res) => {
     try {
         const { id: product_id } = req.params;
@@ -282,10 +281,7 @@ const eliminarProducto = async (req, res) => {
     }
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
-// VARIANTES
-// ══════════════════════════════════════════════════════════════════════════════
-
+// variantes
 const VARIANT_SELECT = {
     variant_id: true,
     product_id: true,
@@ -334,17 +330,19 @@ const generarVariantes = async (req, res) => {
             return res.status(400).json({ mensaje: 'Ningún value_id es válido' });
         }
 
-        // Agrupar por attribute_id → { attr1: [v1,v2], attr2: [v3,v4] }
-        const porAtributo = values.reduce((acc, v) => {
-            const key = String(v.attribute_id);
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(v);
-            return acc;
-        }, {});
+        // Agrupar por attribute_id PRESERVANDO el orden de aparición en value_ids
+        const porAtributo = new Map();
+        for (const valueId of value_ids) {
+            const v = values.find((val) => String(val.value_id) === String(valueId));
+            if (!v) continue;
 
-        // Producto cartesiano de los grupos
-        const grupos = Object.values(porAtributo);
-        const combinaciones = cartesiano(...grupos); // [ [v1,v3], [v1,v4], [v2,v3], [v2,v4] ]
+            const key = String(v.attribute_id);
+            if (!porAtributo.has(key)) porAtributo.set(key, []);
+            porAtributo.get(key).push(v);
+        }
+
+        const grupos = [...porAtributo.values()];
+        const combinaciones = cartesiano(...grupos);
 
         const creadas = [];
         const omitidas = [];
@@ -391,7 +389,7 @@ const generarVariantes = async (req, res) => {
     }
 };
 
-// ─── Listar variantes ──────────────────────────────────────────────────────────
+// Listar variantes
 const listarVariantes = async (req, res) => {
     try {
         const { id } = req.params;
@@ -413,7 +411,7 @@ const listarVariantes = async (req, res) => {
     }
 };
 
-// ─── Toggle variante ───────────────────────────────────────────────────────────
+// Toggle variante
 const toggleVariante = async (req, res) => {
     try {
         const { id, variantId } = req.params;
@@ -444,7 +442,7 @@ const toggleVariante = async (req, res) => {
     }
 };
 
-// ─── Eliminar variante ─────────────────────────────────────────────────────────
+// Eliminar variante
 const eliminarVariante = async (req, res) => {
     try {
         const { id, variantId } = req.params;

@@ -11,6 +11,7 @@ import {
 import { jwtDecode } from 'jwt-decode';
 
 import lotService from '../../../services/lotService';
+import salesService from '../../../services/salesService';
 import useTablePreferences from '../../../hooks/useTablePreferences';
 import TableConfigDrawer from '../../../components/TableConfig/TableConfigDrawer';
 
@@ -105,6 +106,14 @@ const LotsPage = () => {
   const [selectedBloque, setSelectedBloque] = useState(null);
   const [variantSearch, setVariantSearch] = useState('');
 
+  // States for checkbox selection and reservations modal
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedLots, setSelectedLots] = useState([]);
+  const [isReservationsModalVisible, setIsReservationsModalVisible] = useState(false);
+  const [reservations, setReservations] = useState([]);
+  const [loadingReservations, setLoadingReservations] = useState(false);
+  const [confirmingDetailId, setConfirmingDetailId] = useState(null);
+
   const watchedCantidad = Form.useWatch('cantidad_inicial', form);
   const watchedTpr = Form.useWatch('tallos_por_ramo', form);
   const watchedRpc = Form.useWatch('ramos_por_caja', form);
@@ -163,6 +172,8 @@ const LotsPage = () => {
       }
 
       setLots(data);
+      setSelectedRowKeys(prev => prev.filter(key => data.some(l => String(l.lote_id) === String(key))));
+      setSelectedLots(prev => prev.filter(lot => data.some(l => String(l.lote_id) === String(lot.lote_id))));
     } catch {
       notification.error({ message: 'Error', description: 'No se pudieron cargar los lotes.' });
     } finally {
@@ -353,6 +364,192 @@ const LotsPage = () => {
     }
   }
 
+  const handleVerReservas = async () => {
+    const hasReservations = selectedLots.some(l => Number(l.cantidad_reservada) > 0);
+    if (!hasReservations) {
+      notification.warning({
+        message: 'Sin reservas',
+        description: 'Los lotes seleccionados no tienen reservas activas.',
+        placement: 'topRight'
+      });
+      return;
+    }
+
+    setLoadingReservations(true);
+    try {
+      const response = await lotService.getReservations(selectedRowKeys);
+      setReservations(response.data || response || []);
+      setIsReservationsModalVisible(true);
+    } catch (error) {
+      notification.error({
+        message: 'Error',
+        description: 'No se pudieron cargar las reservas activas.'
+      });
+    } finally {
+      setLoadingReservations(false);
+    }
+  };
+
+  const handleConfirmRemoveReservation = async (record) => {
+    try {
+      await salesService.eliminarLinea(record.detail_id);
+      notification.success({
+        message: 'Reserva quitada',
+        description: 'La reserva ha sido eliminada exitosamente y las unidades han retornado al inventario disponible.'
+      });
+      setReservations(prev => prev.filter(r => String(r.detail_id) !== String(record.detail_id)));
+      setConfirmingDetailId(null);
+      fetchLots();
+    } catch (error) {
+      notification.error({
+        message: 'Error al quitar reserva',
+        description: error.response?.data?.mensaje || 'No se pudo eliminar la reserva.'
+      });
+    }
+  };
+
+  const reservationsColumns = [
+    {
+      title: 'Lote',
+      dataIndex: ['lote', 'numero_lote'],
+      key: 'lote',
+      render: (text, record) => {
+        if (confirmingDetailId === record.detail_id) {
+          return {
+            children: (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <span style={{ fontWeight: '600', color: '#d9363e' }}>¿Confirmar quitar reserva?</span>
+                <Space>
+                  <Button
+                    size="small"
+                    type="primary"
+                    style={{ backgroundColor: '#389e0d', borderColor: '#389e0d' }}
+                    onClick={() => handleConfirmRemoveReservation(record)}
+                  >
+                    Confirmar
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => setConfirmingDetailId(null)}
+                  >
+                    Cancelar
+                  </Button>
+                </Space>
+              </div>
+            ),
+            props: {
+              colSpan: 7,
+            },
+          };
+        }
+        return <Text strong>{text || record.lote?.numero_lote}</Text>;
+      }
+    },
+    {
+      title: 'Producto',
+      key: 'product',
+      render: (_, record) => {
+        if (confirmingDetailId === record.detail_id) {
+          return {
+            props: {
+              colSpan: 0,
+            },
+          };
+        }
+        const pName = record.product?.name || '';
+        const attrStr = record.lote?.variant?.attributes?.map(a => a.value?.value).join(' ') || '';
+        const fullName = `${pName} ${attrStr}`.trim();
+        return <Text>{fullName}</Text>;
+      }
+    },
+    {
+      title: 'Cliente',
+      dataIndex: ['order', 'client', 'name'],
+      key: 'client',
+      render: (text, record) => {
+        if (confirmingDetailId === record.detail_id) {
+          return {
+            props: {
+              colSpan: 0,
+            },
+          };
+        }
+        return text || record.order?.client?.name || '-';
+      }
+    },
+    {
+      title: 'N° Venta',
+      dataIndex: ['order', 'order_number'],
+      key: 'order_number',
+      render: (text, record) => {
+        if (confirmingDetailId === record.detail_id) {
+          return {
+            props: {
+              colSpan: 0,
+            },
+          };
+        }
+        const num = text || record.order?.order_number;
+        return num ? `#${num}` : '-';
+      }
+    },
+    {
+      title: 'Fecha Despacho',
+      dataIndex: ['order', 'delivery_date'],
+      key: 'delivery_date',
+      render: (val, record) => {
+        if (confirmingDetailId === record.detail_id) {
+          return {
+            props: {
+              colSpan: 0,
+            },
+          };
+        }
+        const dateVal = val || record.order?.delivery_date;
+        return dateVal
+          ? new Date(dateVal).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '-';
+      }
+    },
+    {
+      title: 'Total Reservado',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      render: (val, record) => {
+        if (confirmingDetailId === record.detail_id) {
+          return {
+            props: {
+              colSpan: 0,
+            },
+          };
+        }
+        const suf = normalizeUnidad(record.lote?.unidad_medida);
+        return <Text strong>{val} {suf}</Text>;
+      }
+    },
+    {
+      title: 'Acciones',
+      key: 'actions',
+      render: (_, record) => {
+        if (confirmingDetailId === record.detail_id) {
+          return {
+            props: {
+              colSpan: 0,
+            },
+          };
+        }
+        return (
+          <Button
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => setConfirmingDetailId(record.detail_id)}
+          />
+        );
+      }
+    }
+  ];
+
   const columnsDef = [
     {
       title: 'Producto',
@@ -495,6 +692,14 @@ const LotsPage = () => {
       fixed: pinnedColumns.has(c.key) ? 'left' : undefined,
     }));
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys, rows) => {
+      setSelectedRowKeys(keys);
+      setSelectedLots(rows);
+    },
+  };
+
   return (
     <div style={{ padding: '24px' }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
@@ -504,14 +709,27 @@ const LotsPage = () => {
           </Typography.Title>
         </Col>
         <Col>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={openCreateModal}
-            style={{ backgroundColor: '#1a3c2e' }}
-          >
-            Nuevo Lote
-          </Button>
+          <Space>
+            <Button
+              onClick={handleVerReservas}
+              disabled={selectedRowKeys.length === 0}
+              style={selectedRowKeys.length > 0 ? {
+                borderColor: '#1a3c2e',
+                color: '#1a3c2e',
+                backgroundColor: '#ffffff',
+              } : {}}
+            >
+              Ver Reservas
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openCreateModal}
+              style={{ backgroundColor: '#1a3c2e' }}
+            >
+              Nuevo Lote
+            </Button>
+          </Space>
         </Col>
       </Row>
 
@@ -568,6 +786,7 @@ const LotsPage = () => {
       </Card>
 
       <Table
+        rowSelection={rowSelection}
         columns={columns}
         dataSource={lots}
         rowKey="lote_id"
@@ -848,6 +1067,29 @@ const LotsPage = () => {
             <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Reservas activas"
+        open={isReservationsModalVisible}
+        onCancel={() => setIsReservationsModalVisible(false)}
+        centered
+        width={900}
+        destroyOnClose
+        footer={[
+          <Button key="close" onClick={() => setIsReservationsModalVisible(false)}>
+            Cerrar
+          </Button>
+        ]}
+      >
+        <Table
+          columns={reservationsColumns}
+          dataSource={reservations}
+          rowKey="detail_id"
+          pagination={false}
+          loading={loadingReservations}
+          locale={{ emptyText: 'No hay reservas activas para los lotes seleccionados.' }}
+        />
       </Modal>
 
       <TableConfigDrawer

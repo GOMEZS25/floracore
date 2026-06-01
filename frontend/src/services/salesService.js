@@ -59,7 +59,24 @@ const salesService = {
   eliminarLinea: async (detailId) => {
     const response = await axiosInstance.delete(`/sales/orders/details/${detailId}`);
     return response.data;
-  }
+  },
+
+  // Asignar inventario a una línea: assignments = [{ lote_id, quantity }]
+  asignarInventario: async (detailId, assignments) => {
+    const response = await axiosInstance.post(`/sales/orders/details/${detailId}/assign`, { assignments });
+    return response.data;
+  },
+
+  // Liberar una asignación específica
+  liberarAsignacion: async (assignmentId) => {
+    const response = await axiosInstance.delete(`/sales/orders/assignments/${assignmentId}`);
+    return response.data;
+  },
+
+  actualizarLinea: async (detailId, data) => {
+    const response = await axiosInstance.patch(`/sales/orders/details/${detailId}`, data);
+    return response.data;
+  },
 };
 
 export default salesService;

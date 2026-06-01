@@ -39,6 +39,11 @@ const lotService = {
   getLocations: async (filters) => {
     const response = await axiosInstance.get('/inventory', { params: filters });
     return response.data;
+  },
+
+  getReservations: async (loteIds) => {
+    const response = await axiosInstance.get('/lot/reservations', { params: { lote_ids: loteIds.join(',') } });
+    return response.data;
   }
 };
 
