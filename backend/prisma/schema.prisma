@@ -170,6 +170,7 @@ model Lote {
 
   stock_movements StockMovement[]
   sales_order_details SalesOrderDetail[]
+  sales_order_assignments SalesOrderAssignment[]
 
   @@index([product_id])
   @@index([location_id])
@@ -451,7 +452,7 @@ model SalesOrder {
 model SalesOrderDetail {
   detail_id       BigInt        @id @default(autoincrement())
   order_id        BigInt
-  lote_id         BigInt
+  lote_id         BigInt?
   product_id      BigInt
   line_number     Int
   packaging_type  PackagingType
@@ -467,13 +468,29 @@ model SalesOrderDetail {
   created_at      DateTime      @default(now())
 
   order   SalesOrder @relation(fields: [order_id], references: [order_id], onDelete: Restrict)
-  lote    Lote       @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
+  lote    Lote?      @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
   product Product    @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+  assignments SalesOrderAssignment[]
 
   @@index([order_id])
   @@index([lote_id])
   @@index([product_id])
   @@map("sales_order_details")
+}
+
+model SalesOrderAssignment {
+  assignment_id BigInt   @id @default(autoincrement())
+  detail_id     BigInt
+  lote_id       BigInt
+  quantity      Int
+  created_at    DateTime @default(now())
+
+  detail SalesOrderDetail @relation(fields: [detail_id], references: [detail_id], onDelete: Cascade)
+  lote   Lote             @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
+
+  @@index([detail_id])
+  @@index([lote_id])
+  @@map("sales_order_assignments")
 }
 
 // CLIENTES

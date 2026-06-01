@@ -103,6 +103,10 @@ const listarLotes = async (req, res) => {
             if (fecha_desde) where.created_at.gte = new Date(fecha_desde);
             if (fecha_hasta) where.created_at.lte = new Date(fecha_hasta);
         }
+        where.OR = [
+            { cantidad_disponible: { gt: 0 } },
+            { cantidad_reservada: { gt: 0 } }
+        ];
 
         const lotes = await prisma.lote.findMany({
             where,
@@ -290,10 +294,75 @@ const adicionarCantidad = async (req, res) => {
     }
 };
 
+// Obtener reservas activas de un listado de lotes
+const obtenerReservasLotes = async (req, res) => {
+    try {
+        const { lote_ids } = req.query;
+
+        if (!lote_ids) {
+            return res.status(400).json({ mensaje: "El parámetro lote_ids es obligatorio" });
+        }
+
+        const idsArray = lote_ids.split(',').map(id => BigInt(id));
+
+        const reservations = await prisma.salesOrderDetail.findMany({
+            where: {
+                lote_id: { in: idsArray },
+                order: {
+                    status: { in: ['BORRADOR', 'APROBADA'] }
+                }
+            },
+            include: {
+                order: {
+                    select: {
+                        order_number: true,
+                        delivery_date: true,
+                        client: {
+                            select: { name: true }
+                        }
+                    }
+                },
+                lote: {
+                    select: {
+                        numero_lote: true,
+                        unidad_medida: true,
+                        variant: {
+                            select: {
+                                attributes: {
+                                    include: {
+                                        value: {
+                                            select: {
+                                                value: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                product: {
+                    select: { name: true }
+                }
+            }
+        });
+
+        return res.status(200).json({
+            mensaje: "Reservas obtenidas exitosamente",
+            data: serializeBigInt(reservations)
+        });
+    } catch (error) {
+        console.error("Error al obtener reservas de lotes:", error.message);
+        return res.status(500).json({ mensaje: "Error interno en el servidor", detalle: error.message });
+    }
+};
+
 module.exports = {
     crearLote,
     listarLotes,
     actualizarLote,
     eliminarLote,
     adicionarCantidad,
+    obtenerReservasLotes,
 };
+

@@ -8,6 +8,8 @@ import {
   CheckCircleOutlined, CarOutlined, CloseCircleOutlined, SettingOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
+import { ReloadOutlined } from '@ant-design/icons';
 
 import salesService from '../../../services/salesService';
 import useTablePreferences from '../../../hooks/useTablePreferences';
@@ -50,8 +52,8 @@ const SalesOrdersPage = () => {
   const [filters, setFilters] = useState({
     search: '',
     status: undefined,
-    fecha_desde: null,
-    fecha_hasta: null,
+    fecha_desde: dayjs().format('YYYY-MM-DD'),
+    fecha_hasta: dayjs().add(2, 'day').format('YYYY-MM-DD'),
   });
 
   const [pagination, setPagination] = useState({ current: 1, pageSize: 25 });
@@ -332,9 +334,23 @@ const SalesOrdersPage = () => {
             </Select>
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <RangePicker style={{ width: '100%' }} onChange={handleDateChange} />
+            <RangePicker
+              style={{ width: '100%' }}
+              value={[
+                filters.fecha_desde ? dayjs(filters.fecha_desde) : null,
+                filters.fecha_hasta ? dayjs(filters.fecha_hasta) : null,
+              ]}
+              onChange={handleDateChange}
+            />
           </Col>
-          <Col xs={24} sm={12} md={5} style={{ textAlign: 'right' }}>
+          <Col xs={4} sm={4} md={2}>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={fetchOrders}
+              style={{ height: 38, width: '100%' }}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={3} style={{ textAlign: 'right' }}>
             <Button
               icon={<SettingOutlined />}
               onClick={() => setConfigOpen(true)}

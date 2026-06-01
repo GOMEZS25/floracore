@@ -13,6 +13,8 @@ const {
     autoGuardarOrden,
     agregarLinea,
     eliminarLinea,
+    asignarInventario,
+    liberarAsignacion,
     updateOrderHeader
 } = require('../controllers/salesOrder.controller');
 
@@ -26,6 +28,10 @@ router.get('/orders/next-number', verificarToken, getNextOrderNumber);
 router.post('/orders/auto-save', verificarToken, checkPermission('SALES', 'can_create'), autoGuardarOrden);
 router.post('/orders/:id/details', verificarToken, checkPermission('SALES', 'can_create'), agregarLinea);
 router.delete('/orders/details/:detail_id', verificarToken, checkPermission('SALES', 'can_edit'), eliminarLinea);
+
+// Asignación de inventario
+router.post('/orders/details/:detail_id/assign', verificarToken, checkPermission('SALES', 'can_edit'), asignarInventario);
+router.delete('/orders/assignments/:assignment_id', verificarToken, checkPermission('SALES', 'can_edit'), liberarAsignacion);
 
 router.get('/orders/:id', verificarToken, checkPermission('SALES', 'can_view'), obtenerOrden);
 router.patch('/orders/:id/approve', verificarToken, checkPermission('SALES', 'can_edit'), aprobarOrden);
