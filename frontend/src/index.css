@@ -11,3 +11,7 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.ant-table-tbody>tr>td {
+  border-bottom-color: #e1e1e1 !important;
+}

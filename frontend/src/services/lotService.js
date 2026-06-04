@@ -12,7 +12,7 @@ const lotService = {
   },
 
   updateLot: async (id, data) => {
-    const response = await axiosInstance.put(`/lot/${id}`, data);
+    const response = await axiosInstance.patch(`/lot/${id}`, data);
     return response.data;
   },
 
