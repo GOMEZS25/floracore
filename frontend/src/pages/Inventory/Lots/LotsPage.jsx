@@ -560,20 +560,30 @@ const LotsPage = () => {
         const fullName = `${pName} ${attrStr}`.trim();
         const sku = record.variant?.sku_variant;
         return (
-          <div>
-            <Text strong style={{ fontSize: 15 }}>{fullName}</Text>
-            {sku && (
-              <div><Text type="secondary" style={{ fontSize: 11 }}>{sku}</Text></div>
-            )}
-          </div>
+          <Text
+            strong
+            style={{
+              fontSize: 13,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: 'block',
+              maxWidth: 300,
+            }}
+            title={fullName}
+          >
+            {fullName}
+          </Text>
         );
+
       }
     },
     {
       title: 'Lote',
       dataIndex: 'numero_lote',
       key: 'numero_lote',
-      render: (text) => <Text strong>{text}</Text>,
+      width: 100,
+      render: (text) => <Text strong style={{ fontSize: 12 }}>{text}</Text>,
     },
     {
       title: 'Ubicación',
@@ -639,7 +649,25 @@ const LotsPage = () => {
         ? new Date(val).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
         : '-'
     },
-    { title: 'Notas', dataIndex: 'notas', key: 'notas' },
+    {
+      title: 'Notas',
+      dataIndex: 'notas',
+      key: 'notas',
+      render: (text) => (
+        <Tooltip title={text}>
+          <Text style={{
+            fontSize: 13,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: 'block',
+            maxWidth: 180,
+          }}>
+            {text}
+          </Text>
+        </Tooltip>
+      ),
+    },
     { title: 'Cant. Cajas', dataIndex: 'cantidad_cajas', key: 'cantidad_cajas' },
     { title: 'Tipo Caja', dataIndex: 'tipo_caja', key: 'tipo_caja' },
     { title: 'Ramos x Caja', dataIndex: 'ramos_por_caja', key: 'ramos_por_caja' },
@@ -704,7 +732,7 @@ const LotsPage = () => {
     <div style={{ padding: '24px' }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
         <Col>
-          <Typography.Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600 }}>
+          <Typography.Title level={3} style={{ margin: 0, color: '#2f2c2cff', fontWeight: 600 }}>
             Inventario
           </Typography.Title>
         </Col>
@@ -770,14 +798,14 @@ const LotsPage = () => {
               <Option value="AGOTADO">AGOTADO</Option>
             </Select>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={5}>
             <RangePicker style={{ width: '100%' }} onChange={handleDateChange} />
           </Col>
           <Col xs={24} sm={12} md={2}>
             <Button
               icon={<SettingOutlined />}
               onClick={() => setConfigOpen(true)}
-              style={{ borderRadius: 8, height: 38 }}
+              style={{ borderRadius: 8, height: 34 }}
             >
               Configurar Vista
             </Button>
@@ -792,12 +820,6 @@ const LotsPage = () => {
         rowKey="lote_id"
         loading={loading}
         scroll={{ x: 1000 }}
-        onRow={(record) => {
-          const pct = record.cantidad_inicial > 0
-            ? record.cantidad_disponible / record.cantidad_inicial
-            : 1;
-          return pct <= 0.2 ? { style: { backgroundColor: '#fff2f0' } } : {};
-        }}
         pagination={{
           pageSizeOptions: ['25', '50', '100'],
           defaultPageSize: 25,

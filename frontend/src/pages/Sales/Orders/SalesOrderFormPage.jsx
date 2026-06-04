@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import salesService from '../../../services/salesService';
 import clientService from '../../../services/clientService';
 import lotService from '../../../services/lotService';
+import './SalesOrderForm.css';
 
 const { Option } = Select;
 const { Text, Title } = Typography;
@@ -532,7 +533,7 @@ const SalesOrderFormPage = () => {
                 <Tag color="green" style={{ fontSize: 11, margin: 0 }}>
                   {asgn.lote?.numero_lote || asgn.lote_id}
                 </Tag>
-                <Text style={{ fontSize: 11 }}>{asgn.quantity} t</Text>
+                <Text style={{ fontSize: 11 }}>{asgn.quantity} Tallos</Text>
                 {isDraft && (
                   <Tooltip title="Liberar asignación">
                     <MinusCircleOutlined
@@ -688,6 +689,7 @@ const SalesOrderFormPage = () => {
           </Form>
         </Card>
 
+
         {orderId && isDraft && (
           <Card
             title={
@@ -711,40 +713,54 @@ const SalesOrderFormPage = () => {
                 style={{ marginBottom: 16 }}
               />
             )}
-            <Form form={lineForm} layout="vertical" onFinish={handleAddLineSubmit}>
+
+            <Form form={lineForm} layout="vertical" onFinish={handleAddLineSubmit} className="add-line-form">
+
+              {/* ── Producto / Cantidad ───────────────────── */}
+              <Divider orientation="left" orientationMargin={0} style={{ fontSize: 12, color: '#8c8c8c', margin: '0 0 12px' }}>
+                Producto
+              </Divider>
               <Row gutter={16}>
                 {addMode === 'LOTE' ? (
-                  <>
-                    <Col xs={24} md={16}>
-                      <Form.Item name="lote_id" label="Lote" rules={[{ required: true, message: 'Requerido' }]}>
-                        <Select showSearch placeholder="Escriba 2 o más letras para buscar" onSearch={handleLotSearch} onChange={handleLotChange} filterOption={false} notFoundContent={null}>
-                          {filteredLots.map(l => {
-                            const lbl = buildLotLabel(l);
-                            return (
-                              <Option key={l.lote_id || l.id} value={l.lote_id || l.id}>
-                                <div style={{ lineHeight: '1.2' }}>
-                                  <span>{lbl.label}</span><br />
-                                  <Text type="secondary" style={{ fontSize: 11 }}>{`${lbl.disp} ${lbl.unidad} disponibles`}</Text>
-                                </div>
-                              </Option>
-                            );
-                          })}
-                        </Select>
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item name="producto" label="Producto">
-                        <Input disabled />
-                      </Form.Item>
-                    </Col>
-                  </>
+                  <Col xs={24} md={12}>
+                    <Form.Item name="lote_id" label="Lote" rules={[{ required: true, message: 'Requerido' }]}>
+                      <Select
+                        showSearch
+                        placeholder="Escriba 2 o más letras para buscar"
+                        onSearch={handleLotSearch}
+                        onChange={handleLotChange}
+                        filterOption={false}
+                        notFoundContent={null}
+                      >
+                        {filteredLots.map(l => {
+                          const lbl = buildLotLabel(l);
+                          return (
+                            <Option key={l.lote_id || l.id} value={l.lote_id || l.id}>
+                              <div style={{ lineHeight: '1.2' }}>
+                                <span>{lbl.label}</span><br />
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                  {`${lbl.disp} ${lbl.unidad} disponibles`}
+                                </Text>
+                              </div>
+                            </Option>
+                          );
+                        })}
+                      </Select>
+                    </Form.Item>
+                  </Col>
                 ) : (
-                  <Col xs={24} md={16}>
-                    <Form.Item name="product_variant_key" label="Producto / Variante" rules={[{ required: true, message: 'Requerido' }]}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="product_variant_key"
+                      label="Producto / Variante"
+                      rules={[{ required: true, message: 'Requerido' }]}
+                    >
                       <Select
                         showSearch
                         placeholder="Buscar producto o variante..."
-                        filterOption={(input, option) => option?.label?.toString().toLowerCase().includes(input.toLowerCase())}
+                        filterOption={(input, option) =>
+                          option?.label?.toString().toLowerCase().includes(input.toLowerCase())
+                        }
                         options={[
                           ...new Map(
                             allLots.filter(l => l.product).map(l => {
@@ -760,40 +776,23 @@ const SalesOrderFormPage = () => {
                     </Form.Item>
                   </Col>
                 )}
-              </Row>
-
-              <Row gutter={16}>
                 <Col xs={24} md={4}>
                   <Form.Item name="quantity" label="Cantidad" rules={[{ required: true }]}>
                     <InputNumber min={1} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
-                <Col xs={24} md={4}>
+                <Col xs={24} md={8}>
                   <Form.Item name="packaging_type" label="Empaque" rules={[{ required: true }]}>
                     <Select onChange={handlePackagingChange}>
-                      <Option value="TALLO">TALLO</Option>
-                      <Option value="RAMO">RAMO</Option>
-                      <Option value="CAJA">CAJA</Option>
+                      <Option value="TALLO">Tallo</Option>
+                      <Option value="RAMO">Ramo</Option>
+                      <Option value="CAJA">Caja</Option>
                     </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={6}>
-                  <Form.Item name="unit_price" label={priceLabel()} rules={[{ required: true }]}>
-                    <InputNumber addonBefore={getCurrencySymbol(clientCurrency)} min={0} step={0.01} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={6}>
-                  <Form.Item name="billing_unit" label="Facturar por" rules={[{ required: true }]}>
-                    <Select options={billingOptions()} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={4}>
-                  <Form.Item name="notes" label="Notas">
-                    <Input placeholder="Opcional..." />
                   </Form.Item>
                 </Col>
               </Row>
 
+              {/* Desglose de empaque (aparece según selección) */}
               {(lineVals.packaging_type === 'RAMO' || lineVals.packaging_type === 'CAJA') && (
                 <Row gutter={16}>
                   {lineVals.packaging_type === 'RAMO' && (
@@ -832,22 +831,79 @@ const SalesOrderFormPage = () => {
                 </Row>
               )}
 
-              <Row justify="end" align="middle" gutter={16} style={{ marginTop: 8 }}>
-                {addMode === 'LOTE' && (
-                  <Col>
-                    <Text type="secondary" style={{ fontSize: 13 }}>Total tallos a reservar: {totalStemsCalc} tallos</Text>
-                  </Col>
-                )}
-                <Col>
-                  <Text strong>Subtotal: </Text>
-                  <Text>{getCurrencySymbol(clientCurrency)} {new Intl.NumberFormat('es-CO').format(subtotalCalc)}</Text>
+              {/* ── Precio ───────────────────────────────── */}
+              <Divider orientation="left" orientationMargin={0} style={{ fontSize: 12, color: '#8c8c8c', margin: '4px 0 12px' }}>
+                Precio
+              </Divider>
+              <Row gutter={16}>
+                <Col xs={24} md={6}>
+                  <Form.Item name="unit_price" label={priceLabel()} rules={[{ required: true }]}>
+                    <InputNumber
+                      addonBefore={getCurrencySymbol(clientCurrency)}
+                      min={0}
+                      step={0.01}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
                 </Col>
+                <Col xs={24} md={6}>
+                  <Form.Item name="billing_unit" label="Se cobra por" rules={[{ required: true }]}>
+                    <Select options={billingOptions()} />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/*  Notas  */}
+              <Row gutter={16}>
+                <Col xs={24}>
+                  <Form.Item name="notes" label="Notas">
+                    <Input placeholder="Opcional..." />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              {/* Franja de resultado */}
+              {Number(totalStemsCalc) > 0 && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  background: '#E1F5EE',
+                  border: '0.5px solid #5DCAA5',
+                  borderRadius: 8,
+                  padding: '12px 16px',
+                  marginBottom: 12,
+                }}>
+                  <span style={{ fontSize: 18, color: '#0F6E56' }}>→</span>
+                  <span>
+                    {addMode === 'LOTE' && (
+                      <Text strong style={{ color: '#04342C' }}>
+                        {totalStemsCalc} tallos a reservar&nbsp;&nbsp;·&nbsp;&nbsp;
+                      </Text>
+                    )}
+                    <Text style={{ color: '#04342C' }}>
+                      Subtotal:{' '}
+                      <Text strong style={{ color: '#04342C' }}>
+                        {getCurrencySymbol(clientCurrency)} {new Intl.NumberFormat('es-CO').format(subtotalCalc)}
+                      </Text>
+                    </Text>
+                  </span>
+                </div>
+              )}
+
+              <Row justify="end">
                 <Col>
-                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />} style={{ backgroundColor: '#1a3c2e' }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<PlusOutlined />}
+                    style={{ backgroundColor: '#1a3c2e' }}
+                  >
                     Agregar línea
                   </Button>
                 </Col>
               </Row>
+
             </Form>
           </Card>
         )}

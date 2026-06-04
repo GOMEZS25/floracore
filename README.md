@@ -1,7 +1,10 @@
+FloraCore
+
+
 ## Stack tecnológico
 
-| Capa   |    Tecnología |
-|---     |---            |
+| Capa | Tecnología |
+|---|---|
 | Frontend | React + Ant Design |
 | Backend | Node.js + Express |
 | ORM | Prisma |
@@ -11,7 +14,7 @@
 | Backend deploy | Render |
 | DB deploy | Railway |
 
-
+---
 
 ## Requisitos previos
 
@@ -20,7 +23,6 @@ Antes de clonar el proyecto, asegúrate de tener instalado:
 - [Node.js](https://nodejs.org/) v18 o superior
 - [Git](https://git-scm.com/)
 - [MySQL](https://www.mysql.com/) (local) o conexión a Railway
-- Un cliente de base de datos (recomendado: [TablePlus](https://tableplus.com/) o [DBeaver](https://dbeaver.io/))
 
 ---
 
@@ -60,7 +62,7 @@ Crea el archivo `backend/.env` con las siguientes variables:
 DATABASE_URL="mysql://usuario:contraseña@host:puerto/floracore"
 
 # JWT
-JWT_SECRET="contraseña_"
+JWT_SECRET="________________"
 JWT_EXPIRES_IN="7d"
 
 # Servidor
@@ -76,6 +78,7 @@ Crea el archivo `frontend/.env`:
 VITE_API_URL=http://localhost:3001
 ```
 
+> **Nota:** Nunca subas archivos `.env` al repositorio. Ya están en `.gitignore`.
 
 ---
 
@@ -173,7 +176,7 @@ feature/* → develop → main
 - `develop` → integración
 - `feature/nombre` → desarrollo de cada funcionalidad
 
-Siempre creamos la  rama desde `develop` actualizado:
+Siempre crea tu rama desde `develop` actualizado:
 
 ```bash
 git checkout develop

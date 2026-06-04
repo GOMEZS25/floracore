@@ -1,0 +1,5 @@
+.add-line-form .ant-form-item-label>label {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.85);
+}

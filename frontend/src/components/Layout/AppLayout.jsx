@@ -88,8 +88,8 @@ const menuItems = [
     icon: <TagOutlined />,
     label: 'Productos',
     children: [
-      { key: '/products/list',       label: 'Productos',   navigate: '/products/list' },
-      { key: '/products/categories', label: 'Categorías',  navigate: '/products/categories' },
+      { key: '/products/list', label: 'Productos', navigate: '/products/list' },
+      { key: '/products/categories', label: 'Categorías', navigate: '/products/categories' },
     ],
   },
   {
