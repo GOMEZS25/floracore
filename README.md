@@ -62,7 +62,7 @@ Crea el archivo `backend/.env` con las siguientes variables:
 DATABASE_URL="mysql://usuario:contraseña@host:puerto/floracore"
 
 # JWT
-JWT_SECRET="tu_secreto_aqui"
+JWT_SECRET="________________"
 JWT_EXPIRES_IN="7d"
 
 # Servidor
