@@ -104,7 +104,7 @@ function App() {
         />
 
         <Route
-          path="/settings/attributes"
+          path="/products/attributes"
           element={
             <AppLayout>
               <AttributesPage />

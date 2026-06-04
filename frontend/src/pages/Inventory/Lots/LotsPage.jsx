@@ -338,7 +338,7 @@ const LotsPage = () => {
       case 'RAMOS': return { label: 'Cantidad de ramos', suffix: 'ramos' };
       case 'CAJAS': return { label: 'Cantidad de cajas', suffix: 'cajas' };
       case 'TALLOS':
-      default: return { label: 'Cantidad de tallos', suffix: 'tallos' };
+      default: return { label: 'Cantidad de tallos', suffix: 'Tallos' };
     }
   };
 
