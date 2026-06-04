@@ -64,6 +64,9 @@ const menuItems = [
       { key: '/inventory/lots', label: 'Lotes', navigate: '/inventory/lots' },
     ],
   },
+
+
+  /*
   {
     key: 'cultivo',
     icon: <EnvironmentOutlined />,
@@ -73,6 +76,8 @@ const menuItems = [
       { key: '/farm/projections', label: 'Proyecciones', navigate: '/farm/projections' },
     ],
   },
+  */
+
   {
     key: 'ventas',
     icon: <ShoppingCartOutlined />,
@@ -80,7 +85,7 @@ const menuItems = [
     children: [
       { key: '/sales/orders', label: 'Órdenes de Venta', navigate: '/sales/orders' },
       { key: '/sales/clients', label: 'Clientes', navigate: '/sales/clients' },
-      { key: '/sales/categories', label: 'Categorías', navigate: '/sales/categories' },
+      /*{ key: '/sales/categories', label: 'Categorías', navigate: '/sales/categories' },*/
     ],
   },
   {
@@ -90,6 +95,7 @@ const menuItems = [
     children: [
       { key: '/products/list', label: 'Productos', navigate: '/products/list' },
       { key: '/products/categories', label: 'Categorías', navigate: '/products/categories' },
+      { key: "/products/attributes", label: "Atributos", navigate: "/products/attributes" }
     ],
   },
   {
@@ -98,8 +104,7 @@ const menuItems = [
     label: 'Configuración',
     children: [
       { key: '/settings/users', label: 'Usuarios', navigate: '/settings/users' },
-      { key: '/settings/attributes', label: 'Atributos', navigate: '/settings/attributes' },
-      { key: '/settings/packaging', label: 'Empaques', navigate: '/settings/packaging' },
+      /*{ key: '/settings/packaging', label: 'Empaques', navigate: '/settings/packaging' },*/
     ],
   },
 ];
