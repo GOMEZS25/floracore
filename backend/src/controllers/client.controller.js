@@ -154,7 +154,7 @@ const actualizarCliente = async (req, res) => {
             where: { client_id: BigInt(id) }
         });
 
-        if (!clienteExistente || !clienteExistente.is_active) {
+        if (!clienteExistente) {
             return res.status(404).json({ mensaje: 'Cliente no encontrado' });
         }
 
@@ -229,6 +229,46 @@ const desactivarCliente = async (req, res) => {
     }
 };
 
+
+//Activar cliente
+const activarCliente = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Validar que el cliente exista
+        const clienteExistente = await prisma.client.findUnique({
+            where: { client_id: BigInt(id) }
+        });
+
+        if (!clienteExistente || clienteExistente.is_active) {
+            return res.status(404).json({ mensaje: 'Cliente no encontrado o ya activo' });
+        }
+
+        // Activar cliente, direcciones y contactos en una transacción
+        await prisma.$transaction(async (tx) => {
+            await tx.clientAddress.updateMany({
+                where: { client_id: BigInt(id) },
+                data: { is_active: true }
+            });
+
+            await tx.clientContact.updateMany({
+                where: { client_id: BigInt(id) },
+                data: { is_active: true }
+            });
+
+            await tx.client.update({
+                where: { client_id: BigInt(id) },
+                data: { is_active: true, status: 'ACTIVO' }
+            });
+        });
+
+        return res.status(200).json({ mensaje: 'Cliente activado exitosamente' });
+
+    } catch (error) {
+        console.error('Error al activar cliente:', error.message);
+        return res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
+    }
+};
 
 // DIRECCIONES
 
@@ -381,6 +421,7 @@ module.exports = {
     obtenerCliente,
     actualizarCliente,
     desactivarCliente,
+    activarCliente,
     agregarDireccion,
     desactivarDireccion,
     agregarContacto,
