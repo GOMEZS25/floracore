@@ -173,7 +173,15 @@ const actualizarCliente = async (req, res) => {
         // Actualizar
         const clienteActualizado = await prisma.client.update({
             where: { client_id: BigInt(id) },
-            data: { code, name, origin, currency, delivery_terms, status }
+            data: {
+                code,
+                name,
+                origin,
+                currency,
+                delivery_terms,
+                status,
+                is_active: status === 'ACTIVO' ? true : false
+            }
         });
 
         return res.status(200).json({
