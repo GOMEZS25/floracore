@@ -509,6 +509,7 @@ const ClientsPage = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={onModalOk}
+        okText="Guardar"
         width={700}
         destroyOnClose
         confirmLoading={saving}
@@ -732,6 +733,7 @@ const ClientsPage = () => {
         open={isAddressModalVisible}
         onCancel={() => setIsAddressModalVisible(false)}
         onOk={onAddressModalOk}
+        okText="Guardar"
         destroyOnClose
         okButtonProps={{ style: { backgroundColor: '#1a3c2e' } }}
       >
@@ -766,6 +768,7 @@ const ClientsPage = () => {
         open={isContactModalVisible}
         onCancel={() => setIsContactModalVisible(false)}
         onOk={onContactModalOk}
+        okText="Guardar"
         destroyOnClose
         okButtonProps={{ style: { backgroundColor: '#1a3c2e' } }}
       >

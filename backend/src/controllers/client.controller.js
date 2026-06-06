@@ -171,17 +171,27 @@ const actualizarCliente = async (req, res) => {
         }
 
         // Actualizar
-        const clienteActualizado = await prisma.client.update({
-            where: { client_id: BigInt(id) },
-            data: {
-                code,
-                name,
-                origin,
-                currency,
-                delivery_terms,
-                status,
-                is_active: status === 'ACTIVO' ? true : false
+        const clienteActualizado = await prisma.$transaction(async (tx) => {
+            //Reactivar direcciones y contactos
+            if (status === 'ACTIVO') {
+                await tx.clientAddress.updateMany({
+                    where: { client_id: BigInt(id) },
+                    data: { is_active: true }
+                });
+                await tx.clientContact.updateMany({
+                    where: { client_id: BigInt(id) },
+                    data: { is_active: true }
+                });
             }
+
+            return await tx.client.update({
+                where: { client_id: BigInt(id) },
+                data: {
+                    code, name, origin, currency, delivery_terms,
+                    status,
+                    is_active: status === 'ACTIVO'
+                }
+            });
         });
 
         return res.status(200).json({
