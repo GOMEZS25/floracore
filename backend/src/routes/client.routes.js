@@ -8,6 +8,7 @@ const {
     obtenerCliente,
     actualizarCliente,
     desactivarCliente,
+    activarCliente,
     agregarDireccion,
     desactivarDireccion,
     agregarContacto,
@@ -23,6 +24,7 @@ router.get('/', verificarToken, checkPermission('CLIENTS', 'can_view'), listarCl
 router.get('/:id', verificarToken, checkPermission('CLIENTS', 'can_view'), obtenerCliente);
 router.put('/:id', verificarToken, checkPermission('CLIENTS', 'can_edit'), actualizarCliente);
 router.delete('/:id', verificarToken, checkPermission('CLIENTS', 'can_delete'), desactivarCliente);
+router.put('/:id/activate', verificarToken, checkPermission('CLIENTS', 'can_edit'), activarCliente);
 
 // Direcciones
 router.post('/:id/addresses', verificarToken, checkPermission('CLIENTS', 'can_create'), agregarDireccion);
