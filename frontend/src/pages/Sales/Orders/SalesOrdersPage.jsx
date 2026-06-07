@@ -333,7 +333,7 @@ const SalesOrdersPage = () => {
               <Option value="CANCELADA">CANCELADA</Option>
             </Select>
           </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={7}>
             <RangePicker
               style={{ width: '100%' }}
               value={[
@@ -350,11 +350,11 @@ const SalesOrdersPage = () => {
               style={{ height: 38, width: '100%' }}
             />
           </Col>
-          <Col xs={24} sm={12} md={3} style={{ textAlign: 'right' }}>
+          <Col xs={24} sm={12} md={4} style={{ textAlign: 'right' }}>
             <Button
               icon={<SettingOutlined />}
               onClick={() => setConfigOpen(true)}
-              style={{ borderRadius: 8, height: 38 }}
+              style={{ borderRadius: 8, height: 38, width: '100%' }}
             >
               Configurar Vista
             </Button>

@@ -93,6 +93,7 @@ const listarOrdenes = async (req, res) => {
                 details: {
                     include: {
                         product: { select: { product_id: true, sku: true, name: true } },
+                        variant: { include: { attributes: { include: { value: true } } } },
                         lote: { select: { lote_id: true, numero_lote: true } },
                         assignments: {
                             include: { lote: { select: { lote_id: true, numero_lote: true } } }
@@ -127,6 +128,15 @@ const obtenerOrden = async (req, res) => {
                 details: {
                     include: {
                         product: true,
+                        variant: {
+                            include: {
+                                attributes: {
+                                    include: {
+                                        value: true
+                                    }
+                                }
+                            }
+                        },
                         lote: {
                             include: {
                                 variant: {
@@ -396,14 +406,15 @@ const autoGuardarOrden = async (req, res) => {
 };
 
 // Agregar línea a orden
-// Modo LOTE: requiere lote_id → crea detalle + assignment + afecta inventario
-// Modo PRODUCTO: lote_id = null → solo crea detalle, sin tocar inventario
+// Modo LOTE: requiere lote_id, crea detalle + assignment, afecta inventario
+// Modo PRODUCTO: lote_id = null, solo crea detalle, sin tocar inventario
 const agregarLinea = async (req, res) => {
     try {
         const { id } = req.params;
         const {
             lote_id,           // null si modo PRODUCTO
             product_id,
+            variant_id,
             packaging_type,
             quantity,
             tallos_por_ramo,
@@ -468,6 +479,7 @@ const agregarLinea = async (req, res) => {
                     order_id: BigInt(id),
                     lote_id: lote_id ? BigInt(lote_id) : null,
                     product_id: BigInt(product_id),
+                    variant_id: variant_id ? BigInt(variant_id) : null,
                     line_number: currentLineCount + 1,
                     packaging_type,
                     quantity: qty,

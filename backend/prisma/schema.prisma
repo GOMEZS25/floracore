@@ -454,6 +454,7 @@ model SalesOrderDetail {
   order_id        BigInt
   lote_id         BigInt?
   product_id      BigInt
+  variant_id      BigInt?
   line_number     Int
   packaging_type  PackagingType
   quantity        Int
@@ -470,7 +471,10 @@ model SalesOrderDetail {
   order   SalesOrder @relation(fields: [order_id], references: [order_id], onDelete: Restrict)
   lote    Lote?      @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
   product Product    @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+  variant ProductVariant? @relation(fields: [variant_id], references: [variant_id], onDelete: Restrict)
   assignments SalesOrderAssignment[]
+
+
 
   @@index([order_id])
   @@index([lote_id])
@@ -606,6 +610,7 @@ model ProductVariant {
   product    Product                  @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
   attributes ProductVariantAttribute[]
   lotes      Lote[]
+  sales_order_details SalesOrderDetail[]
 
   @@index([product_id])
   @@map("product_variants")

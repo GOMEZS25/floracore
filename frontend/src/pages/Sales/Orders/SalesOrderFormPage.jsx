@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import salesService from '../../../services/salesService';
 import clientService from '../../../services/clientService';
 import lotService from '../../../services/lotService';
+import * as productService from '../../../services/productService';
 import './SalesOrderForm.css';
 
 const { Option } = Select;
@@ -79,6 +80,7 @@ const SalesOrderFormPage = () => {
 
   const [allLots, setAllLots] = useState([]);
   const [filteredLots, setFilteredLots] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
 
   const [addMode, setAddMode] = useState('LOTE');
 
@@ -88,27 +90,32 @@ const SalesOrderFormPage = () => {
   useEffect(() => {
     fetchInitialData();
     if (id) fetchOrder(id);
-    else lineForm.setFieldsValue({ packaging_type: 'TALLO', billing_unit: 'TALLO', quantity: 1, unit_price: 0 });
+    else lineForm.setFieldsValue({ packaging_type: 'TALLO', billing_unit: 'TALLO', quantity: 0, unit_price: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
     lineForm.resetFields();
-    lineForm.setFieldsValue({ packaging_type: 'TALLO', billing_unit: 'TALLO', quantity: 1, unit_price: 0 });
+    lineForm.setFieldsValue({ packaging_type: 'TALLO', billing_unit: 'TALLO', quantity: 0, unit_price: 0 });
     setFilteredLots([]);
   }, [addMode, lineForm]);
 
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [clientsRes, lotsRes, catRes] = await Promise.all([
-        clientService.getClients({ is_active: 'true' }),
-        lotService.getLots({ estado: 'DISPONIBLE' }),
-        salesService.getTransactionCategories().catch(() => ({ data: [] }))
+      const [clientsRes, lotsRes, catRes, prodRes] = await Promise.all([
+        clientService.getClients({ is_active: 'true' }).catch(() => ({ data: [] })),
+        lotService.getLots({ estado: 'DISPONIBLE' }).catch(() => ({ data: [] })),
+        salesService.getTransactionCategories().catch(() => ({ data: [] })),
+        productService.getProducts({ is_active: 'true' }).catch(() => [])
       ]);
       setClients(clientsRes?.data?.data || clientsRes?.data || []);
       setAllLots(lotsRes?.data?.data || lotsRes?.data || lotsRes || []);
+
+      const lots = lotsRes?.data?.data || lotsRes?.data || lotsRes || [];
+
       setCategories(catRes?.data?.data || catRes?.data || catRes || []);
+      setAllProducts(prodRes?.data?.data || prodRes?.data || prodRes || []);
     } catch (error) {
       notification.error({ message: 'Error', description: 'No se pudieron cargar los datos auxiliares.' });
     } finally {
@@ -233,7 +240,7 @@ const SalesOrderFormPage = () => {
 
   const handlePackagingChange = (val) => {
     lineForm.setFieldsValue({
-      quantity: 1, cantidad_ramos: 1, cantidad_cajas: 1, tallos_por_ramo: 25, ramos_por_caja: 10,
+      quantity: 0, cantidad_ramos: 0, cantidad_cajas: 0, tallos_por_ramo: 0, ramos_por_caja: 0,
       billing_unit: val === 'CAJA' ? 'CAJA' : val === 'RAMO' ? 'RAMO' : 'TALLO'
     });
   };
@@ -284,13 +291,24 @@ const SalesOrderFormPage = () => {
         return;
       }
     }
-    if (!values.product_id && addMode === 'PRODUCTO') { notification.error({ message: 'Selecciona un producto' }); return; }
+    if (!values.product_variant_key && addMode === 'PRODUCTO') { notification.error({ message: 'Selecciona un producto' }); return; }
+
+    let product_id = null;
+    let variant_id = null;
+    if (addMode === 'LOTE') {
+      product_id = selectedLot?.product_id;
+    } else {
+      const parts = String(values.product_variant_key).split('_');
+      product_id = parts[0];
+      if (parts[1] && parts[1] !== 'base') variant_id = parts[1];
+    }
 
     const payload = {
       lote_id: addMode === 'LOTE' ? (selectedLot?.lote_id || selectedLot?.id) : null,
-      product_id: addMode === 'LOTE' ? selectedLot?.product_id : values.product_id,
+      product_id: product_id,
+      variant_id: variant_id,
       packaging_type: values.packaging_type,
-      quantity: values.packaging_type === 'TALLO' ? values.quantity : values.packaging_type === 'RAMO' ? values.cantidad_ramos : values.cantidad_cajas,
+      quantity: values.packaging_type === 'TALLO' ? values.cantidad_tallos : values.packaging_type === 'RAMO' ? values.cantidad_ramos : values.cantidad_cajas,
       tallos_por_ramo: values.packaging_type !== 'TALLO' ? values.tallos_por_ramo : undefined,
       ramos_por_caja: values.packaging_type === 'CAJA' ? values.ramos_por_caja : undefined,
       unit_price: values.unit_price,
@@ -303,7 +321,7 @@ const SalesOrderFormPage = () => {
       await salesService.agregarLinea(orderId, payload);
       notification.success({ message: 'Línea agregada.' });
       lineForm.resetFields();
-      lineForm.setFieldsValue({ packaging_type: 'TALLO', billing_unit: 'TALLO', quantity: 1, unit_price: 0 });
+      lineForm.setFieldsValue({ packaging_type: 'TALLO', billing_unit: 'TALLO', quantity: 0, unit_price: 0 });
       setFilteredLots([]);
       fetchOrder(orderId);
       const lotsRes = await lotService.getLots({ estado: 'DISPONIBLE' });
@@ -461,6 +479,26 @@ const SalesOrderFormPage = () => {
   const isDraft = status === 'BORRADOR';
   const isApproved = status === 'APROBADA';
 
+  const handleEnterToNext = (e) => {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+
+      if (document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')) return;
+
+      e.preventDefault();
+      const container = document.querySelector('.add-line-form');
+      if (container) {
+        // Find all focusable inputs/buttons in the form
+        const focusable = Array.from(container.querySelectorAll('input:not([disabled]), textarea:not([disabled]), button:not([disabled])'));
+        const index = focusable.indexOf(e.target);
+        if (index > -1 && index < focusable.length - 1) {
+          focusable[index + 1].focus();
+        } else if (index === focusable.length - 1) {
+          lineForm.submit();
+        }
+      }
+    }
+  };
+
   const lotColumns = [
     { title: 'Lote', dataIndex: 'numero_lote' },
     { title: 'Producto', key: 'prod', render: (_, l) => buildLotLabel(l).fullName },
@@ -469,8 +507,11 @@ const SalesOrderFormPage = () => {
       title: 'Seleccionar', key: 'sel', render: (_, lote) => (
         <Button size="small" type="primary" style={{ backgroundColor: '#1a3c2e' }}
           onClick={() => {
-            lineForm.setFieldsValue({ lote_id: lote.lote_id || lote.id });
-            handleLotChange(lote.lote_id || lote.id);
+            setFilteredLots([lote]);  // ← primero actualizar las opciones
+            setTimeout(() => {        // ← luego setear el valor
+              lineForm.setFieldsValue({ lote_id: lote.lote_id || lote.id });
+              handleLotChange(lote.lote_id || lote.id);
+            }, 0);
             setInventoryModalOpen(false);
           }}>Seleccionar</Button>
       )
@@ -490,7 +531,8 @@ const SalesOrderFormPage = () => {
       width: 220,
       render: (_, r) => {
         const n = r.product?.name || '';
-        const a = r.lote?.variant?.attributes?.map(x => x.value?.value).join(' ') || '';
+        const a = (r.lote?.variant || r.variant)
+            ?.attributes?.map(x => x.value?.value).join(' ') || '';
         return <Text strong>{`${n} ${a}`.trim()}</Text>;
       }
     },
@@ -714,12 +756,9 @@ const SalesOrderFormPage = () => {
               />
             )}
 
-            <Form form={lineForm} layout="vertical" onFinish={handleAddLineSubmit} className="add-line-form">
+            <Form form={lineForm} layout="vertical" onFinish={handleAddLineSubmit} className="add-line-form" onKeyDown={handleEnterToNext}>
 
-              {/* ── Producto / Cantidad ───────────────────── */}
-              <Divider orientation="left" orientationMargin={0} style={{ fontSize: 12, color: '#8c8c8c', margin: '0 0 12px' }}>
-                Producto
-              </Divider>
+              {/* Producto */}
               <Row gutter={16}>
                 {addMode === 'LOTE' ? (
                   <Col xs={24} md={12}>
@@ -762,26 +801,21 @@ const SalesOrderFormPage = () => {
                           option?.label?.toString().toLowerCase().includes(input.toLowerCase())
                         }
                         options={[
-                          ...new Map(
-                            allLots.filter(l => l.product).map(l => {
-                              const variantKey = `${l.product_id}_${l.variant_id || 'base'}`;
-                              const productName = l.product?.name || '';
-                              const attrStr = l.variant?.attributes?.map(a => a.value?.value).join(' ') || '';
-                              const fullLabel = attrStr ? `${productName} — ${attrStr}` : productName;
-                              return [variantKey, { value: variantKey, label: fullLabel }];
-                            })
-                          ).values()
+                          ...allProducts.flatMap(p => {
+                            if (!p.variants || p.variants.length === 0) {
+                              return [{ value: `${p.product_id}_base`, label: p.name }];
+                            }
+                            return p.variants.map(v => {
+                              const attrStr = v.attributes?.map(a => a.value?.value).join(' ') || '';
+                              return { value: `${p.product_id}_${v.variant_id}`, label: attrStr ? `${p.name} ${attrStr}` : p.name };
+                            });
+                          })
                         ]}
                       />
                     </Form.Item>
                   </Col>
                 )}
-                <Col xs={24} md={4}>
-                  <Form.Item name="quantity" label="Cantidad" rules={[{ required: true }]}>
-                    <InputNumber min={1} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
+                <Col xs={24} md={12}>
                   <Form.Item name="packaging_type" label="Empaque" rules={[{ required: true }]}>
                     <Select onChange={handlePackagingChange}>
                       <Option value="TALLO">Tallo</Option>
@@ -793,48 +827,50 @@ const SalesOrderFormPage = () => {
               </Row>
 
               {/* Desglose de empaque (aparece según selección) */}
-              {(lineVals.packaging_type === 'RAMO' || lineVals.packaging_type === 'CAJA') && (
-                <Row gutter={16}>
-                  {lineVals.packaging_type === 'RAMO' && (
-                    <>
-                      <Col xs={24} md={6}>
-                        <Form.Item name="cantidad_ramos" label="Cantidad de ramos" rules={[{ required: true }]}>
-                          <InputNumber min={1} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} md={6}>
-                        <Form.Item name="tallos_por_ramo" label="Tallos por ramo" rules={[{ required: true }]}>
-                          <InputNumber min={1} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                    </>
-                  )}
-                  {lineVals.packaging_type === 'CAJA' && (
-                    <>
-                      <Col xs={24} md={6}>
-                        <Form.Item name="cantidad_cajas" label="Cantidad de cajas" rules={[{ required: true }]}>
-                          <InputNumber min={1} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} md={6}>
-                        <Form.Item name="ramos_por_caja" label="Ramos por caja" rules={[{ required: true }]}>
-                          <InputNumber min={1} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} md={6}>
-                        <Form.Item name="tallos_por_ramo" label="Tallos por ramo" rules={[{ required: true }]}>
-                          <InputNumber min={1} style={{ width: '100%' }} />
-                        </Form.Item>
-                      </Col>
-                    </>
-                  )}
-                </Row>
-              )}
+              <Row gutter={16}>
+                {lineVals.packaging_type === 'TALLO' && (
+                  <Col xs={24} md={5}>
+                    <Form.Item name="cantidad_tallos" label="Tallos" rules={[{ required: true, message: 'Ingresa la cantidad de tallos' }]}>
+                      <InputNumber min={1} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Col>
+                )}
+                {lineVals.packaging_type === 'RAMO' && (
+                  <>
+                    <Col xs={24} md={6}>
+                      <Form.Item name="cantidad_ramos" label="Cantidad de ramos" rules={[{ required: true }]}>
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={6}>
+                      <Form.Item name="tallos_por_ramo" label="Tallos por ramo" rules={[{ required: true }]}>
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </>
+                )}
+                {lineVals.packaging_type === 'CAJA' && (
+                  <>
+                    <Col xs={24} md={6}>
+                      <Form.Item name="cantidad_cajas" label="Cantidad de cajas" rules={[{ required: true }]}>
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={6}>
+                      <Form.Item name="ramos_por_caja" label="Ramos por caja" rules={[{ required: true }]}>
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={6}>
+                      <Form.Item name="tallos_por_ramo" label="Tallos por ramo" rules={[{ required: true }]}>
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  </>
+                )}
+              </Row>
 
-              {/* ── Precio ───────────────────────────────── */}
-              <Divider orientation="left" orientationMargin={0} style={{ fontSize: 12, color: '#8c8c8c', margin: '4px 0 12px' }}>
-                Precio
-              </Divider>
+              {/* Precio */}
               <Row gutter={16}>
                 <Col xs={24} md={6}>
                   <Form.Item name="unit_price" label={priceLabel()} rules={[{ required: true }]}>
@@ -853,7 +889,7 @@ const SalesOrderFormPage = () => {
                 </Col>
               </Row>
 
-              {/*  Notas  */}
+              {/* Notas */}
               <Row gutter={16}>
                 <Col xs={24}>
                   <Form.Item name="notes" label="Notas">
@@ -1069,7 +1105,7 @@ const SalesOrderFormPage = () => {
             <Col xs={24} md={8}>
               <Form.Item name="packaging_type" label="Empaque" rules={[{ required: true }]}>
                 <Select onChange={(val) => {
-                  editForm.setFieldsValue({ billing_unit: val, quantity: 1, cantidad_ramos: 1, cantidad_cajas: 1, tallos_por_ramo: 25, ramos_por_caja: 10 });
+                  editForm.setFieldsValue({ billing_unit: val, quantity: 0, cantidad_ramos: 0, cantidad_cajas: 0, tallos_por_ramo: 0, ramos_por_caja: 0 });
                 }}>
                   <Option value="TALLO">TALLO</Option>
                   <Option value="RAMO">RAMO</Option>
