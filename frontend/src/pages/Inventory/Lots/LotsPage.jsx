@@ -54,7 +54,7 @@ const getAvailabilityColor = (disponible, total) => {
   if (!total) return undefined;
   const pct = disponible / total;
   if (pct <= 0.2) return '#ff4d4f';
-  if (pct <= 0.5) return '#faad14';
+  if (pct <= 0.5) return '#f39807ff';
   return undefined;
 };
 
@@ -338,7 +338,7 @@ const LotsPage = () => {
       case 'RAMOS': return { label: 'Cantidad de ramos', suffix: 'ramos' };
       case 'CAJAS': return { label: 'Cantidad de cajas', suffix: 'cajas' };
       case 'TALLOS':
-      default: return { label: 'Cantidad de tallos', suffix: 'Tallos' };
+      default: return { label: 'Cantidad de tallos', suffix: 'tallos' };
     }
   };
 
@@ -705,7 +705,7 @@ const LotsPage = () => {
               okText="Sí"
               cancelText="No"
             >
-              <Button size="small" danger icon={<DeleteOutlined />} />
+              <Button size="small" danger icon={<DeleteOutlined />} style={{ borderColor: '#d9d9d9', color: '#8c8c8c' }} />
             </Popconfirm>
           </Tooltip>
         </Space>
@@ -763,7 +763,7 @@ const LotsPage = () => {
 
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={4}>
             <Input
               placeholder="Buscar por producto o SKU..."
               value={filters.search}
@@ -801,11 +801,11 @@ const LotsPage = () => {
           <Col xs={24} sm={12} md={5}>
             <RangePicker style={{ width: '100%' }} onChange={handleDateChange} />
           </Col>
-          <Col xs={24} sm={12} md={2}>
+          <Col xs={24} sm={12} md={4}>
             <Button
               icon={<SettingOutlined />}
               onClick={() => setConfigOpen(true)}
-              style={{ borderRadius: 8, height: 34 }}
+              style={{ borderRadius: 8, height: 34, width: '100%' }}
             >
               Configurar Vista
             </Button>
