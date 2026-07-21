@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Select, DatePicker, Input, InputNumber, Button,
   Table, Typography, Row, Col, Card, Spin, notification, Popconfirm,
-  Space, Tag, Modal, Radio, Alert, Divider, Tooltip
+  Space, Tag, Modal, Radio, Alert, Divider, Tooltip, Checkbox
 } from 'antd';
 import {
   ArrowLeftOutlined, PlusOutlined, DeleteOutlined,
@@ -70,6 +70,7 @@ const SalesOrderFormPage = () => {
   const [assigningDetail, setAssigningDetail] = useState(null);
   const [assignRows, setAssignRows] = useState([{ lote_id: null, quantity: 0 }]);
   const [assignLoading, setAssignLoading] = useState(false);
+  const [showAllProducts, setShowAllProducts] = useState(false);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingDetail, setEditingDetail] = useState(null);
@@ -386,6 +387,7 @@ const SalesOrderFormPage = () => {
   const openAssignModal = (detail) => {
     setAssigningDetail(detail);
     setAssignRows([{ lote_id: null, quantity: 0 }]);
+    setShowAllProducts(false);
     setAssignModalOpen(true);
   };
 
@@ -393,6 +395,7 @@ const SalesOrderFormPage = () => {
     setAssignModalOpen(false);
     setAssigningDetail(null);
     setAssignRows([{ lote_id: null, quantity: 0 }]);
+    setShowAllProducts(false);
   };
 
   const openEditLineModal = (detail) => {
@@ -532,7 +535,7 @@ const SalesOrderFormPage = () => {
       render: (_, r) => {
         const n = r.product?.name || '';
         const a = (r.lote?.variant || r.variant)
-            ?.attributes?.map(x => x.value?.value).join(' ') || '';
+          ?.attributes?.map(x => x.value?.value).join(' ') || '';
         return <Text strong>{`${n} ${a}`.trim()}</Text>;
       }
     },
@@ -646,12 +649,27 @@ const SalesOrderFormPage = () => {
   const totalTallos = orderLines.reduce((acc, l) => acc + (Number(l.total_stems) || 0), 0);
   const totalAsignados = orderLines.reduce((acc, l) => acc + getAssignmentSummary(l).assigned, 0);
 
-  const assignModalLots = assigningDetail ? allLots.filter(l => Number(l.cantidad_disponible) > 0) : [];
+  const assignModalLots = assigningDetail
+    ? allLots.filter(l => {
+      if (Number(l.cantidad_disponible) <= 0) return false;
+      if (showAllProducts) return true;
+      const sameProduct = String(l.product_id) === String(assigningDetail.product_id);
+      const detailVariantId = assigningDetail.variant_id || assigningDetail.lote?.variant_id || null;
+      const sameVariant = detailVariantId
+        ? String(l.variant_id) === String(detailVariantId)
+        : true;
+      return sameProduct && sameVariant;
+    })
+    : [];
 
   const { total: assignTotal, assigned: assignAlready, pending: assignPending } =
     assigningDetail ? getAssignmentSummary(assigningDetail) : { total: 0, assigned: 0, pending: 0 };
 
   const newAssignmentSum = assignRows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+
+  const assigningDetailFullName = assigningDetail
+    ? `${assigningDetail.product?.name || ''} ${(assigningDetail.variant || assigningDetail.lote?.variant)?.attributes?.map(a => a.value?.value).join(' ') || ''}`.trim()
+    : '';
 
   return (
     <Spin spinning={loading}>
@@ -815,7 +833,7 @@ const SalesOrderFormPage = () => {
                     </Form.Item>
                   </Col>
                 )}
-                <Col xs={24} md={12}>
+                <Col xs={24} md={6}>
                   <Form.Item name="packaging_type" label="Empaque" rules={[{ required: true }]}>
                     <Select onChange={handlePackagingChange}>
                       <Option value="TALLO">Tallo</Option>
@@ -824,70 +842,62 @@ const SalesOrderFormPage = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-              </Row>
 
-              {/* Desglose de empaque (aparece según selección) */}
-              <Row gutter={16}>
-                {lineVals.packaging_type === 'TALLO' && (
-                  <Col xs={24} md={5}>
-                    <Form.Item name="cantidad_tallos" label="Tallos" rules={[{ required: true, message: 'Ingresa la cantidad de tallos' }]}>
-                      <InputNumber min={1} style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                )}
-                {lineVals.packaging_type === 'RAMO' && (
-                  <>
-                    <Col xs={24} md={6}>
+                {lineVals.packaging_type && (
+                  <Col xs={24} md={6}>
+                    {lineVals.packaging_type === 'TALLO' && (
+                      <Form.Item name="cantidad_tallos" label="Tallos" rules={[{ required: true, message: 'Ingresa la cantidad de tallos' }]}>
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                      </Form.Item>
+                    )}
+                    {lineVals.packaging_type === 'RAMO' && (
                       <Form.Item name="cantidad_ramos" label="Cantidad de ramos" rules={[{ required: true }]}>
                         <InputNumber min={1} style={{ width: '100%' }} />
                       </Form.Item>
-                    </Col>
-                    <Col xs={24} md={6}>
-                      <Form.Item name="tallos_por_ramo" label="Tallos por ramo" rules={[{ required: true }]}>
-                        <InputNumber min={1} style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                  </>
-                )}
-                {lineVals.packaging_type === 'CAJA' && (
-                  <>
-                    <Col xs={24} md={6}>
+                    )}
+                    {lineVals.packaging_type === 'CAJA' && (
                       <Form.Item name="cantidad_cajas" label="Cantidad de cajas" rules={[{ required: true }]}>
                         <InputNumber min={1} style={{ width: '100%' }} />
                       </Form.Item>
-                    </Col>
+                    )}
+                  </Col>
+                )}
+              </Row>
+
+              {/* Desglose de empaque y Precio */}
+              {lineVals.packaging_type && (
+                <Row gutter={16}>
+                  {lineVals.packaging_type === 'CAJA' && (
                     <Col xs={24} md={6}>
                       <Form.Item name="ramos_por_caja" label="Ramos por caja" rules={[{ required: true }]}>
                         <InputNumber min={1} style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
+                  )}
+                  {(lineVals.packaging_type === 'RAMO' || lineVals.packaging_type === 'CAJA') && (
                     <Col xs={24} md={6}>
                       <Form.Item name="tallos_por_ramo" label="Tallos por ramo" rules={[{ required: true }]}>
                         <InputNumber min={1} style={{ width: '100%' }} />
                       </Form.Item>
                     </Col>
-                  </>
-                )}
-              </Row>
-
-              {/* Precio */}
-              <Row gutter={16}>
-                <Col xs={24} md={6}>
-                  <Form.Item name="unit_price" label={priceLabel()} rules={[{ required: true }]}>
-                    <InputNumber
-                      addonBefore={getCurrencySymbol(clientCurrency)}
-                      min={0}
-                      step={0.01}
-                      style={{ width: '100%' }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={6}>
-                  <Form.Item name="billing_unit" label="Se cobra por" rules={[{ required: true }]}>
-                    <Select options={billingOptions()} />
-                  </Form.Item>
-                </Col>
-              </Row>
+                  )}
+                  <Col xs={24} md={6}>
+                    <Form.Item name="unit_price" label={priceLabel()} rules={[{ required: true }]}>
+                      <InputNumber
+                        addonBefore={getCurrencySymbol(clientCurrency)}
+                        min={0}
+                        step={0.01}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={6}>
+                    <Form.Item name="billing_unit" label="Se cobra por" rules={[{ required: true }]}>
+                      <Select options={billingOptions()} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              )}
 
               {/* Notas */}
               <Row gutter={16}>
@@ -984,7 +994,7 @@ const SalesOrderFormPage = () => {
             <span>Asignar Inventario</span>
             {assigningDetail && (
               <Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>
-                Línea #{assigningDetail.line_number} — {assigningDetail.product?.name} — {assigningDetail.packaging_type}
+                Línea #{assigningDetail.line_number} : {assigningDetailFullName} | {assigningDetail.packaging_type}
               </Text>
             )}
           </Space>
@@ -1041,6 +1051,14 @@ const SalesOrderFormPage = () => {
               </>
             )}
 
+            <Checkbox
+              checked={showAllProducts}
+              onChange={(e) => setShowAllProducts(e.target.checked)}
+              style={{ marginBottom: 8 }}
+            >
+              Ver todos los productos
+            </Checkbox>
+
             <Text strong style={{ display: 'block', marginBottom: 8 }}>Nueva asignación</Text>
             {assignRows.map((row, idx) => (
               <Row key={idx} gutter={8} align="middle" style={{ marginBottom: 8 }}>
@@ -1050,7 +1068,7 @@ const SalesOrderFormPage = () => {
                     filterOption={(i, o) => o.children?.toString().toLowerCase().includes(i.toLowerCase())}
                   >
                     {assignModalLots.map(l => (
-                      <Option key={l.lote_id} value={l.lote_id}>{buildLotLabel(l).label} — {l.cantidad_disponible} disp.</Option>
+                      <Option key={l.lote_id} value={l.lote_id}>{buildLotLabel(l).label} | {l.cantidad_disponible} disp.</Option>
                     ))}
                   </Select>
                 </Col>
@@ -1085,7 +1103,7 @@ const SalesOrderFormPage = () => {
             <span>Editar Línea</span>
             {editingDetail && (
               <Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>
-                Línea #{editingDetail.line_number} — {editingDetail.product?.name}
+                Línea #{editingDetail.line_number} | {editingDetail.product?.name}
               </Text>
             )}
           </Space>
