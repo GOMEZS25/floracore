@@ -84,29 +84,38 @@ const listarOrdenes = async (req, res) => {
             if (delivery_date_end) where.delivery_date.lte = new Date(delivery_date_end + 'T23:59:59');
         }
 
-        const ordenes = await prisma.salesOrder.findMany({
-            where,
-            include: {
-                client: { select: { client_id: true, name: true, code: true } },
-                client_address: true,
-                transaction_category: true,
-                details: {
-                    include: {
-                        product: { select: { product_id: true, sku: true, name: true } },
-                        variant: { include: { attributes: { include: { value: true } } } },
-                        lote: { select: { lote_id: true, numero_lote: true } },
-                        assignments: {
-                            include: { lote: { select: { lote_id: true, numero_lote: true } } }
+        const pageNum = parseInt(page) || 1;
+        const pageSize = parseInt(limit) || 25;
+
+        const [ordenes, total] = await Promise.all([
+            prisma.salesOrder.findMany({
+                where,
+                include: {
+                    client: { select: { client_id: true, name: true, code: true, currency: true } },
+                    client_address: true,
+                    transaction_category: true,
+                    details: {
+                        include: {
+                            product: { select: { product_id: true, sku: true, name: true } },
+                            variant: { include: { attributes: { include: { value: true } } } },
+                            lote: { select: { lote_id: true, numero_lote: true } },
+                            assignments: {
+                                include: { lote: { select: { lote_id: true, numero_lote: true } } }
+                            }
                         }
                     }
-                }
-            },
-            orderBy: { order_number: 'desc' }
-        });
+                },
+                orderBy: { order_number: 'desc' },
+                skip: (pageNum - 1) * pageSize,
+                take: pageSize,
+            }),
+            prisma.salesOrder.count({ where }),
+        ]);
 
         return res.status(200).json({
             mensaje: 'Órdenes de venta listadas exitosamente',
             data: ordenes.map(serializeBigInt),
+            total,
         });
 
     } catch (error) {
