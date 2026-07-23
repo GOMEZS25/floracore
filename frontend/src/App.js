@@ -2,10 +2,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login/Login';
 import Home from './pages/Home/Home';
 import AppLayout from './components/Layout/AppLayout';
+import RequireAdmin from './components/Layout/RequireAdmin';
 import CategoriesPage from './pages/Products/Categories/CategoriesPage';
 import AttributesPage from './pages/Settings/Attributes/AttributesPage';
 import ProductsPage from './pages/Products/ProductsPage';
 import UsersPage from './pages/Settings/Users/UsersPage';
+import SystemSettingsPage from './pages/Settings/System/SystemSettingsPage';
 import LocationsPage from './pages/Inventory/Locations/LocationsPage';
 import LotsPage from './pages/Inventory/Lots/LotsPage';
 import ClientsPage from './pages/Sales/Clients/ClientsPage';
@@ -118,6 +120,17 @@ function App() {
             <AppLayout>
               <UsersPage />
             </AppLayout>
+          }
+        />
+
+        <Route
+          path="/settings/system"
+          element={
+            <RequireAdmin>
+              <AppLayout>
+                <SystemSettingsPage />
+              </AppLayout>
+            </RequireAdmin>
           }
         />
       </Routes>

@@ -11,7 +11,6 @@ import {
   MenuUnfoldOutlined,
   LogoutOutlined,
   UserOutlined,
-  DownOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
@@ -36,6 +35,7 @@ function getUserFromToken() {
     return {
       name: decoded.nombre || decoded.name || decoded.email || 'Usuario',
       email: decoded.email || '',
+      isAdmin: decoded.esAdmin === true,
       initials: (decoded.nombre || decoded.name || 'U')
         .split(' ')
         .slice(0, 2)
@@ -104,6 +104,7 @@ const menuItems = [
     label: 'Configuración',
     children: [
       { key: '/settings/users', label: 'Usuarios', navigate: '/settings/users' },
+      { key: '/settings/system', label: 'Sistema', navigate: '/settings/system', adminOnly: true },
       /*{ key: '/settings/packaging', label: 'Empaques', navigate: '/settings/packaging' },*/
     ],
   },
@@ -132,18 +133,22 @@ const AppLayout = ({ children }) => {
     navigate('/login');
   };
 
-  const buildMenuItems = (items) =>
-    items.map(({ key, icon, label, navigate: nav, children: ch }) => ({
-      key,
-      icon,
-      label,
-      children: ch
-        ? ch.map((child) => ({
-          key: child.key,
-          label: child.label,
-        }))
-        : undefined,
-    }));
+  const buildMenuItems = (items, isAdmin) =>
+    items
+      .filter((item) => !item.adminOnly || isAdmin)
+      .map(({ key, icon, label, children: ch }) => ({
+        key,
+        icon,
+        label,
+        children: ch
+          ? ch
+            .filter((child) => !child.adminOnly || isAdmin)
+            .map((child) => ({
+              key: child.key,
+              label: child.label,
+            }))
+          : undefined,
+      }));
 
   const handleMenuClick = ({ key }) => {
     for (const item of menuItems) {
@@ -237,7 +242,7 @@ const AppLayout = ({ children }) => {
           mode="inline"
           selectedKeys={[location.pathname]}
           defaultOpenKeys={collapsed ? [] : defaultOpenKeys}
-          items={buildMenuItems(menuItems)}
+          items={buildMenuItems(menuItems, user?.isAdmin)}
           onClick={handleMenuClick}
           inlineIndent={16}
           style={{
@@ -248,6 +253,71 @@ const AppLayout = ({ children }) => {
           }}
           theme="dark"
         />
+
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            bottom: 0,
+            width: '100%',
+            padding: collapsed ? '10px 0' : '10px 16px',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+          }}
+        >
+          {user ? (
+            <Dropdown
+              menu={{ items: userDropdownItems, onClick: handleUserMenuClick }}
+              placement="topRight"
+              arrow
+              trigger={['click']}
+            >
+              <Space
+                style={{ cursor: 'pointer', userSelect: 'none', minWidth: 0 }}
+              >
+                <Avatar
+                  size={22}
+                  style={{
+                    background: `linear-gradient(135deg, ${COLORS.hoverBg}, ${COLORS.activeBg})`,
+                    fontWeight: 700,
+                    fontSize: 10,
+                    color: '#fff',
+                    flexShrink: 0,
+                  }}
+                >
+                  {user.initials}
+                </Avatar>
+                {!collapsed && (
+                  <Text
+                    style={{
+                      color: COLORS.menuText,
+                      fontSize: 12,
+                      maxWidth: 130,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {user.name}
+                  </Text>
+                )}
+              </Space>
+            </Dropdown>
+          ) : (
+            !collapsed && (
+              <Button
+                size="small"
+                type="text"
+                icon={<LogoutOutlined />}
+                onClick={handleLogout}
+                style={{ color: COLORS.menuText, paddingLeft: 0 }}
+              >
+                Salir
+              </Button>
+            )
+          )}
+        </div>
 
         <style>{`
           .ant-menu-dark .ant-menu-item:hover,
@@ -325,69 +395,9 @@ const AppLayout = ({ children }) => {
           >
             {!collapsed ? '' : 'FloraCore ERP'}
           </Text>
-
-          {user ? (
-            <Dropdown
-              menu={{ items: userDropdownItems, onClick: handleUserMenuClick }}
-              placement="bottomRight"
-              arrow
-              trigger={['click']}
-            >
-              <Space
-                style={{
-                  cursor: 'pointer',
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  transition: 'background 0.2s',
-                  userSelect: 'none',
-                }}
-                className="user-dropdown-trigger"
-              >
-                <Avatar
-                  size={34}
-                  style={{
-                    background: `linear-gradient(135deg, ${COLORS.hoverBg}, ${COLORS.activeBg})`,
-                    fontWeight: 700,
-                    fontSize: 13,
-                    color: '#fff',
-                    flexShrink: 0,
-                  }}
-                >
-                  {user.initials}
-                </Avatar>
-                <Text
-                  style={{
-                    color: '#1a3c2e',
-                    fontWeight: 500,
-                    fontSize: 14,
-                    maxWidth: 140,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {user.name}
-                </Text>
-                <DownOutlined style={{ fontSize: 11, color: '#888' }} />
-              </Space>
-            </Dropdown>
-          ) : (
-            <Button
-              type="primary"
-              danger
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-              style={{ borderRadius: 8 }}
-            >
-              Salir
-            </Button>
-          )}
         </Header>
 
         <style>{`
-          .user-dropdown-trigger:hover {
-            background: #f0f7f2 !important;
-          }
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         `}</style>
 

@@ -200,7 +200,8 @@ const SalesOrdersPage = () => {
       key: 'total',
       render: (_, record) => {
         const total = calculateTotal(record);
-        return <Text strong>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(total)}</Text>;
+        const currency = record.client?.currency || 'COP';
+        return <Text strong>{new Intl.NumberFormat('es-CO', { style: 'currency', currency }).format(total)}</Text>;
       }
     },
     {
@@ -242,7 +243,7 @@ const SalesOrdersPage = () => {
             <Tooltip title="Aprobar Orden">
               <Popconfirm
                 title="¿Aprobar esta orden?"
-                onConfirm={() => handleApprove(record.sales_order_id || record.id)}
+                onConfirm={() => handleApprove(record.order_id)}
                 okText="Sí"
                 cancelText="No"
               >
@@ -255,7 +256,7 @@ const SalesOrdersPage = () => {
             <Tooltip title="Despachar Orden">
               <Popconfirm
                 title="¿Despachar esta orden? Se moverá el inventario permanentemente."
-                onConfirm={() => handleDispatch(record.sales_order_id || record.id)}
+                onConfirm={() => handleDispatch(record.order_id)}
                 okText="Sí"
                 cancelText="No"
               >
@@ -365,7 +366,7 @@ const SalesOrdersPage = () => {
       <Table
         columns={columns}
         dataSource={orders}
-        rowKey={(record) => record.sales_order_id || record.id}
+        rowKey={(record) => record.order_id}
         loading={loading}
         scroll={{ x: 1000 }}
         pagination={{

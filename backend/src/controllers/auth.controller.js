@@ -35,7 +35,8 @@ const login = async (req, res) => {
             {
                 id: user.user_id.toString(),
                 rol: user.role_id ? user.role_id.toString() : null,
-                nombre: user.full_name
+                nombre: user.full_name,
+                esAdmin: user.is_super_admin
             },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN }
