@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Select, DatePicker, Input, Button,
-  Typography, Row, Col, Card, Spin, notification, Popconfirm,
-  Space, Tag, Divider
+  Typography, Row, Col, Card, Spin, notification, Popconfirm, Modal,
+  Space, Tag
 } from 'antd';
 import {
   ArrowLeftOutlined, PlusOutlined,
-  CheckCircleOutlined, CarOutlined, CloseCircleOutlined
+  CheckCircleOutlined, CarOutlined, CloseCircleOutlined, RollbackOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -20,6 +21,7 @@ import EditLineModal from './EditLineModal';
 import AssignInventoryModal from './AssignInventoryModal';
 import AddProductsCard from './AddProductsCard';
 import OrderLinesCard from './OrderLinesCard';
+import { formatOrderNumber } from '../../../utils/orderNumber';
 import './SalesOrderForm.css';
 
 const { Option } = Select;
@@ -150,7 +152,7 @@ const SalesOrderFormPage = () => {
     }
   };
 
-  const isReadOnly = orderData?.status === 'DESPACHADA' || orderData?.status === 'CANCELADA';
+  const isReadOnly = orderData?.status === 'CANCELADA';
 
   const headerVals = Form.useWatch([], headerForm) || {};
 
@@ -210,40 +212,51 @@ const SalesOrderFormPage = () => {
     }
   };
 
-  const handleApprove = async () => {
+  const STATUS_CHANGE_SUCCESS = {
+    APROBADA: 'Orden aprobada con éxito',
+    DESPACHADA: 'Orden despachada con éxito',
+    CANCELADA: 'Orden cancelada',
+    BORRADOR: 'Orden devuelta a borrador',
+  };
+
+  const handleChangeStatus = async (newStatus) => {
     try {
       setLoading(true);
-      await salesService.aprobarOrden(orderId);
-      notification.success({ message: 'Orden aprobada con éxito' });
+      await salesService.cambiarEstadoOrden(orderId, newStatus);
+      notification.success({ message: STATUS_CHANGE_SUCCESS[newStatus] || 'Estado actualizado' });
       fetchOrder(orderId);
     } catch (error) {
-      notification.error({ message: 'Error al aprobar', description: error.response?.data?.mensaje || 'No se pudo aprobar la orden.' });
+      notification.error({ message: 'Error', description: error.response?.data?.mensaje || 'No se pudo actualizar el estado de la orden.' });
       setLoading(false);
     }
   };
 
-  const handleDispatch = async () => {
-    try {
-      setLoading(true);
-      await salesService.despacharOrden(orderId);
-      notification.success({ message: 'Orden despachada con éxito' });
-      fetchOrder(orderId);
-    } catch (error) {
-      notification.error({ message: 'Error al despachar', description: error.response?.data?.mensaje || 'No se pudo despachar la orden.' });
-      setLoading(false);
+  const handleDispatchClick = () => {
+    const hasAnyAssignment = orderLines.some(l => (l.assignments || []).length > 0);
+    if (hasAnyAssignment) {
+      handleChangeStatus('DESPACHADA');
+      return;
     }
+    Modal.confirm({
+      title: 'Despachar sin inventario asignado',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Esta orden no tiene lotes asignados a sus líneas. Se despachará sin afectar el inventario. ¿Deseas continuar?',
+      okText: 'Sí, despachar',
+      cancelText: 'Cancelar',
+      onOk: () => handleChangeStatus('DESPACHADA'),
+    });
   };
 
-  const handleCancel = async () => {
-    try {
-      setLoading(true);
-      await salesService.cancelarOrden(orderId);
-      notification.success({ message: 'Orden cancelada' });
-      fetchOrder(orderId);
-    } catch (error) {
-      notification.error({ message: 'Error al cancelar', description: error.response?.data?.mensaje || 'No se pudo cancelar la orden.' });
-      setLoading(false);
-    }
+  const handleCancelDespachadaClick = () => {
+    Modal.confirm({
+      title: '¿Cancelar una orden ya despachada?',
+      icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+      content: 'Esta orden ya fue despachada. Al cancelarla, el inventario reservado en sus líneas se devolverá a disponible. Esta acción no se puede deshacer.',
+      okText: 'Sí, cancelar orden',
+      okType: 'danger',
+      cancelText: 'Volver',
+      onOk: () => handleChangeStatus('CANCELADA'),
+    });
   };
 
   const openAssignModal = (detail) => {
@@ -332,46 +345,55 @@ const SalesOrderFormPage = () => {
           <Col>
             <Space size={16} align="center">
               <Button type="default" icon={<ArrowLeftOutlined />} onClick={() => navigate('/sales/orders')}>Volver</Button>
-              <Space size={10} align="center">
-                <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600 }}>
-                  {orderData ? `Orden #${orderData.order_number}` : 'Nueva Orden'}
-                </Title>
-                {status && STATUS_TAG[status] && (
-                  <Tag color={STATUS_TAG[status].color} style={{ fontSize: 13, padding: '2px 10px', fontWeight: 600, margin: 0 }}>
-                    {STATUS_TAG[status].text}
-                  </Tag>
-                )}
-              </Space>
+              <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600 }}>
+                {orderData ? `Orden ${formatOrderNumber(orderData.order_number)}` : 'Nueva Orden'}
+              </Title>
             </Space>
           </Col>
           <Col>
-            <Space size={12} align="center">
-              <Button icon={<PlusOutlined />} onClick={() => navigate('/sales/orders/new')} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }}>
-                Nueva Orden
-              </Button>
-              {orderId && (status === 'BORRADOR' || status === 'APROBADA') && (
-                <Divider type="vertical" style={{ height: 24, margin: 0 }} />
-              )}
-              {orderId && (
-                <>
-                  {status === 'BORRADOR' && orderLines.length > 0 && (
-                    <Button icon={<CheckCircleOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={handleApprove}>Aprobar</Button>
-                  )}
-                  {status === 'APROBADA' && (
-                    <Button icon={<CarOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={handleDispatch}>Despachar</Button>
-                  )}
-                  {(status === 'BORRADOR' || status === 'APROBADA') && (
-                    <Popconfirm title="¿Cancelar orden?" onConfirm={handleCancel} okText="Sí" cancelText="No">
-                      <Button icon={<CloseCircleOutlined />} danger type="default">Cancelar</Button>
-                    </Popconfirm>
-                  )}
-                </>
-              )}
-            </Space>
+            <Button icon={<PlusOutlined />} onClick={() => navigate('/sales/orders/new')} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }}>
+              Nueva Orden
+            </Button>
           </Col>
         </Row>
 
-        <Card title="Datos Generales" style={{ marginBottom: 24, borderRadius: 8, overflow: 'hidden' }} styles={{ header: { backgroundColor: '#f5f5f5' } }}>
+        <Card
+          title={
+            <Space size={10} align="center">
+              <span>Datos Generales</span>
+              {status && STATUS_TAG[status] && (
+                <Tag color={STATUS_TAG[status].color} style={{ fontSize: 13, padding: '2px 10px', fontWeight: 600, margin: 0 }}>
+                  {STATUS_TAG[status].text}
+                </Tag>
+              )}
+            </Space>
+          }
+          extra={
+            orderId && (
+              <Space size={12} align="center">
+                {status === 'BORRADOR' && orderLines.length > 0 && (
+                  <Button icon={<CheckCircleOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={() => handleChangeStatus('APROBADA')}>Aprobar</Button>
+                )}
+                {status === 'APROBADA' && (
+                  <Button icon={<RollbackOutlined />} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }} onClick={() => handleChangeStatus('BORRADOR')}>Devolver a Borrador</Button>
+                )}
+                {status === 'APROBADA' && (
+                  <Button icon={<CarOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={handleDispatchClick}>Despachar</Button>
+                )}
+                {(status === 'BORRADOR' || status === 'APROBADA') && (
+                  <Popconfirm title="¿Cancelar orden?" onConfirm={() => handleChangeStatus('CANCELADA')} okText="Sí" cancelText="No">
+                    <Button icon={<CloseCircleOutlined />} danger type="default">Cancelar</Button>
+                  </Popconfirm>
+                )}
+                {status === 'DESPACHADA' && (
+                  <Button icon={<CloseCircleOutlined />} danger type="default" onClick={handleCancelDespachadaClick}>Cancelar</Button>
+                )}
+              </Space>
+            )
+          }
+          style={{ marginBottom: 24, borderRadius: 8, overflow: 'hidden' }}
+          styles={{ header: { backgroundColor: '#f5f5f5' } }}
+        >
           <Form form={headerForm} layout="vertical" disabled={isReadOnly}>
             <Row gutter={16}>
               <Col xs={24} md={8}>

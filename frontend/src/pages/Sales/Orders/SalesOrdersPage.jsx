@@ -14,6 +14,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
 import useTablePreferences from '../../../hooks/useTablePreferences';
 import TableConfigDrawer from '../../../components/TableConfig/TableConfigDrawer';
+import { formatOrderNumber } from '../../../utils/orderNumber';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -125,7 +126,7 @@ const SalesOrdersPage = () => {
 
   const handleApprove = async (id) => {
     try {
-      await salesService.aprobarOrden(id);
+      await salesService.cambiarEstadoOrden(id, 'APROBADA');
       notification.success({ message: 'Orden aprobada con éxito' });
       fetchOrders();
     } catch (error) {
@@ -138,7 +139,7 @@ const SalesOrdersPage = () => {
 
   const handleDispatch = async (id) => {
     try {
-      await salesService.despacharOrden(id);
+      await salesService.cambiarEstadoOrden(id, 'DESPACHADA');
       notification.success({ message: 'Orden despachada con éxito' });
       fetchOrders();
     } catch (error) {
@@ -151,7 +152,7 @@ const SalesOrdersPage = () => {
 
   const handleCancel = async (id) => {
     try {
-      await salesService.cancelarOrden(id);
+      await salesService.cambiarEstadoOrden(id, 'CANCELADA');
       notification.success({ message: 'Orden cancelada' });
       fetchOrders();
     } catch (error) {
@@ -172,7 +173,7 @@ const SalesOrdersPage = () => {
       title: 'Nº Orden',
       dataIndex: 'order_number',
       key: 'order_number',
-      render: (text) => <Text strong>{text || '-'}</Text>,
+      render: (text) => <Text strong>{text ? formatOrderNumber(text) : '-'}</Text>,
     },
     {
       title: 'Cliente',
