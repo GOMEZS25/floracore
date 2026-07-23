@@ -16,18 +16,9 @@ const salesService = {
     return response.data;
   },
 
-  aprobarOrden: async (id) => {
-    const response = await axiosInstance.patch(`/sales/orders/${id}/approve`);
-    return response.data;
-  },
-
-  despacharOrden: async (id) => {
-    const response = await axiosInstance.patch(`/sales/orders/${id}/dispatch`);
-    return response.data;
-  },
-
-  cancelarOrden: async (id) => {
-    const response = await axiosInstance.patch(`/sales/orders/${id}/cancel`);
+  // Transición de estado única: status = 'BORRADOR' | 'APROBADA' | 'DESPACHADA' | 'CANCELADA'
+  cambiarEstadoOrden: async (id, status) => {
+    const response = await axiosInstance.patch(`/sales/orders/${id}/status`, { status });
     return response.data;
   },
 

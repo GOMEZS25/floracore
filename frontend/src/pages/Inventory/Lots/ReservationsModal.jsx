@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Table, Button, Space, Typography, notification } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
+import { formatOrderNumber } from '../../../utils/orderNumber';
 
 const { Text } = Typography;
 
@@ -117,7 +118,7 @@ const ReservationsModal = ({ open, reservations, loading, onClose, onRemoved, on
           };
         }
         const num = text || record.order?.order_number;
-        return num ? `#${num}` : '-';
+        return num ? formatOrderNumber(num) : '-';
       }
     },
     {
