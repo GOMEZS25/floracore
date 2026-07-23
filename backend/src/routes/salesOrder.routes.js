@@ -7,9 +7,7 @@ const {
     crearOrden,
     listarOrdenes,
     obtenerOrden,
-    aprobarOrden,
-    despacharOrden,
-    cancelarOrden,
+    cambiarEstadoOrden,
     autoGuardarOrden,
     agregarLinea,
     actualizarLinea,
@@ -36,9 +34,7 @@ router.post('/orders/details/:detail_id/assign', verificarToken, checkPermission
 router.delete('/orders/assignments/:assignment_id', verificarToken, checkPermission('SALES', 'can_edit'), liberarAsignacion);
 
 router.get('/orders/:id', verificarToken, checkPermission('SALES', 'can_view'), obtenerOrden);
-router.patch('/orders/:id/approve', verificarToken, checkPermission('SALES', 'can_edit'), aprobarOrden);
-router.patch('/orders/:id/dispatch', verificarToken, checkPermission('SALES', 'can_edit'), despacharOrden);
-router.patch('/orders/:id/cancel', verificarToken, checkPermission('SALES', 'can_edit'), cancelarOrden);
+router.patch('/orders/:id/status', verificarToken, checkPermission('SALES', 'can_edit'), cambiarEstadoOrden);
 router.patch('/orders/:id/update-header', verificarToken, checkPermission('SALES', 'can_edit'), updateOrderHeader);
 
 module.exports = router;

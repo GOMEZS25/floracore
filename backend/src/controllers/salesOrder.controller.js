@@ -193,163 +193,136 @@ const obtenerOrden = async (req, res) => {
     }
 };
 
-// Aprobar orden - validar que todas las líneas con assignments tengan algo asignado
-const aprobarOrden = async (req, res) => {
+// Transiciones de estado válidas para órdenes de venta.
+// Única fuente de verdad: cualquier transición no listada aquí se rechaza con 400.
+const ALLOWED_ORDER_TRANSITIONS = {
+    BORRADOR: ['APROBADA', 'CANCELADA'],
+    APROBADA: ['BORRADOR', 'DESPACHADA', 'CANCELADA'],
+    DESPACHADA: ['CANCELADA'],
+    CANCELADA: []
+};
+
+// Cambiar estado de una orden - endpoint único para todas las transiciones
+const cambiarEstadoOrden = async (req, res) => {
     try {
         const { id } = req.params;
+        const { status: nuevoEstado } = req.body;
+
+        if (!nuevoEstado) {
+            return res.status(400).json({ mensaje: 'El nuevo estado es obligatorio' });
+        }
 
         const orden = await prisma.salesOrder.findUnique({
             where: { order_id: BigInt(id) },
-            include: {
-                details: { include: { assignments: true } }
-            }
+            include: { details: { include: { assignments: true } } }
         });
 
         if (!orden) {
             return res.status(404).json({ mensaje: 'Orden de venta no encontrada' });
         }
 
-        if (orden.status !== 'BORRADOR') {
-            return res.status(400).json({ mensaje: 'Sólo se pueden aprobar órdenes en estado BORRADOR' });
+        const estadoActual = orden.status;
+        const permitidos = ALLOWED_ORDER_TRANSITIONS[estadoActual] || [];
+
+        if (!permitidos.includes(nuevoEstado)) {
+            return res.status(400).json({
+                mensaje: `No se puede pasar de ${estadoActual} a ${nuevoEstado}`
+            });
         }
 
-        if (!orden.details || orden.details.length === 0) {
+        if (nuevoEstado === 'APROBADA' && (!orden.details || orden.details.length === 0)) {
             return res.status(400).json({ mensaje: 'La orden no tiene líneas asociadas' });
         }
 
-        const ordenAprobada = await prisma.salesOrder.update({
-            where: { order_id: BigInt(id) },
-            data: { status: 'APROBADA' }
-        });
-
-        return res.status(200).json({
-            mensaje: 'Orden aprobada exitosamente',
-            data: serializeBigInt(ordenAprobada),
-        });
-
-    } catch (error) {
-        console.error('Error al aprobar orden de venta:', error.message);
-        return res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
-    }
-};
-
-// Despachar orden - libera reservas de assignments
-const despacharOrden = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        let ordenDespachada;
+        let ordenActualizada;
 
         await prisma.$transaction(async (tx) => {
-            const orden = await tx.salesOrder.findUnique({
+            ordenActualizada = await tx.salesOrder.update({
                 where: { order_id: BigInt(id) },
-                include: {
-                    details: {
-                        include: { assignments: true }
+                data: { status: nuevoEstado }
+            });
+
+            // APROBADA -> DESPACHADA: descuenta reservada (disponible ya se descontó al asignar)
+            if (estadoActual === 'APROBADA' && nuevoEstado === 'DESPACHADA') {
+                for (const detail of orden.details) {
+                    for (const asgn of detail.assignments) {
+                        await tx.lote.update({
+                            where: { lote_id: asgn.lote_id },
+                            data: { cantidad_reservada: { decrement: asgn.quantity } }
+                        });
+
+                        await tx.stockMovement.create({
+                            data: {
+                                lote_id: asgn.lote_id,
+                                movement_type: 'VENTA',
+                                quantity: asgn.quantity,
+                                notes: `Despacho orden #${orden.order_number}`,
+                                created_by: BigInt(req.usuario.id)
+                            }
+                        });
                     }
                 }
-            });
+            }
 
-            if (!orden) throw new Error('Orden de venta no encontrada');
-            if (orden.status !== 'APROBADA') throw new Error('Solo se pueden despachar órdenes en estado APROBADA');
+            // BORRADOR|APROBADA -> CANCELADA: la reserva seguía activa, se libera por completo
+            if ((estadoActual === 'BORRADOR' || estadoActual === 'APROBADA') && nuevoEstado === 'CANCELADA') {
+                for (const detail of orden.details) {
+                    for (const asgn of detail.assignments) {
+                        await tx.lote.update({
+                            where: { lote_id: asgn.lote_id },
+                            data: {
+                                cantidad_reservada: { decrement: asgn.quantity },
+                                cantidad_disponible: { increment: asgn.quantity }
+                            }
+                        });
 
-            ordenDespachada = await tx.salesOrder.update({
-                where: { order_id: BigInt(id) },
-                data: { status: 'DESPACHADA' }
-            });
-
-            // Para cada detalle, procesar sus assignments
-            for (const detail of orden.details) {
-                for (const asgn of detail.assignments) {
-                    // Decrementar reservada (disponible ya fue decrementado al asignar)
-                    await tx.lote.update({
-                        where: { lote_id: asgn.lote_id },
-                        data: {
-                            cantidad_reservada: { decrement: asgn.quantity }
-                        }
-                    });
-
-                    await tx.stockMovement.create({
-                        data: {
-                            lote_id: asgn.lote_id,
-                            movement_type: 'VENTA',
-                            quantity: asgn.quantity,
-                            notes: `Despacho orden #${orden.order_number}`,
-                            created_by: BigInt(req.usuario.id)
-                        }
-                    });
+                        await tx.stockMovement.create({
+                            data: {
+                                lote_id: asgn.lote_id,
+                                movement_type: 'CANCELACION',
+                                quantity: asgn.quantity,
+                                notes: `Cancelación orden #${orden.order_number}`,
+                                created_by: BigInt(req.usuario.id)
+                            }
+                        });
+                    }
                 }
             }
+
+            // DESPACHADA -> CANCELADA: la reservada ya se había descontado al despachar,
+            // solo se devuelve a disponible (equivale a revertir la venta).
+            // TODO: restrict to users with a specific permission
+            if (estadoActual === 'DESPACHADA' && nuevoEstado === 'CANCELADA') {
+                for (const detail of orden.details) {
+                    for (const asgn of detail.assignments) {
+                        await tx.lote.update({
+                            where: { lote_id: asgn.lote_id },
+                            data: { cantidad_disponible: { increment: asgn.quantity } }
+                        });
+
+                        await tx.stockMovement.create({
+                            data: {
+                                lote_id: asgn.lote_id,
+                                movement_type: 'CANCELACION',
+                                quantity: asgn.quantity,
+                                notes: `Cancelación de orden despachada #${orden.order_number}`,
+                                created_by: BigInt(req.usuario.id)
+                            }
+                        });
+                    }
+                }
+            }
+
+            // APROBADA -> BORRADOR: solo cambia el status, no afecta inventario ni assignments
         });
 
         return res.status(200).json({
-            mensaje: 'Orden despachada exitosamente',
-            data: serializeBigInt(ordenDespachada),
+            mensaje: 'Estado de la orden actualizado exitosamente',
+            data: serializeBigInt(ordenActualizada),
         });
 
     } catch (error) {
-        console.error('Error al despachar orden de venta:', error.message);
-        return res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
-    }
-};
-
-// Cancelar orden - devuelve inventario reservado
-const cancelarOrden = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        let ordenCancelada;
-
-        await prisma.$transaction(async (tx) => {
-            const orden = await tx.salesOrder.findUnique({
-                where: { order_id: BigInt(id) },
-                include: {
-                    details: { include: { assignments: true } }
-                }
-            });
-
-            if (!orden) throw new Error('Orden de venta no encontrada');
-
-            if (orden.status !== 'BORRADOR' && orden.status !== 'APROBADA') {
-                throw new Error('Sólo se pueden cancelar órdenes en estado BORRADOR o APROBADA');
-            }
-
-            ordenCancelada = await tx.salesOrder.update({
-                where: { order_id: BigInt(id) },
-                data: { status: 'CANCELADA' }
-            });
-
-            // Devolver el inventario reservado por los assignments
-            for (const detail of orden.details) {
-                for (const asgn of detail.assignments) {
-                    await tx.lote.update({
-                        where: { lote_id: asgn.lote_id },
-                        data: {
-                            cantidad_reservada: { decrement: asgn.quantity },
-                            cantidad_disponible: { increment: asgn.quantity }
-                        }
-                    });
-
-                    await tx.stockMovement.create({
-                        data: {
-                            lote_id: asgn.lote_id,
-                            movement_type: 'CANCELACION',
-                            quantity: asgn.quantity,
-                            notes: `Cancelación orden #${orden.order_number}`,
-                            created_by: BigInt(req.usuario.id)
-                        }
-                    });
-                }
-            }
-        });
-
-        return res.status(200).json({
-            mensaje: 'Orden cancelada exitosamente',
-            data: serializeBigInt(ordenCancelada),
-        });
-
-    } catch (error) {
-        console.error('Error al cancelar orden de venta:', error.message);
+        console.error('Error al cambiar estado de la orden de venta:', error.message);
         return res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
     }
 };
@@ -888,8 +861,8 @@ const updateOrderHeader = async (req, res) => {
         });
 
         if (!orden) return res.status(404).json({ mensaje: 'Orden no encontrada' });
-        if (orden.status === 'DESPACHADA' || orden.status === 'CANCELADA') {
-            return res.status(400).json({ mensaje: 'No se puede editar una orden finalizada' });
+        if (orden.status === 'CANCELADA') {
+            return res.status(400).json({ mensaje: 'No se puede editar una orden cancelada' });
         }
 
         const updated = await prisma.salesOrder.update({
@@ -915,9 +888,7 @@ module.exports = {
     crearOrden,
     listarOrdenes,
     obtenerOrden,
-    aprobarOrden,
-    despacharOrden,
-    cancelarOrden,
+    cambiarEstadoOrden,
     autoGuardarOrden,
     agregarLinea,
     actualizarLinea,
