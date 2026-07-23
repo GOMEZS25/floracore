@@ -2,6 +2,15 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { serializeBigInt } = require('../utils/bigint.helper');
 
+// Calcula semana ISO 8601 y su año correspondiente para una fecha dada
+const getIsoWeekAndYear = (date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return { week, year: d.getUTCFullYear() };
+};
 
 //Crear Lote
 const crearLote = async (req, res) => {
@@ -25,6 +34,8 @@ const crearLote = async (req, res) => {
         }
 
 
+        const { week, year } = getIsoWeekAndYear(new Date());
+
         const loteCreado = await prisma.$transaction(async (tx) => {
             //Crear lote con número temporal
             const nuevoLote = await tx.lote.create({
@@ -42,6 +53,8 @@ const crearLote = async (req, res) => {
                     tallos_por_ramo: tallos_por_ramo || null,
                     zona_corte: zona_corte || null,
                     notas: notas || null,
+                    week_number: week,
+                    year: year,
                     created_by: BigInt(req.usuario.id),
                 }
             });

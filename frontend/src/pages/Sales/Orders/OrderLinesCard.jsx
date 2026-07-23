@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Table, Row, Col, Space, Tag, Tooltip, Button, Popconfirm, Progress, Typography } from 'antd';
 import { EditOutlined, LinkOutlined, DeleteOutlined } from '@ant-design/icons';
-import { getCurrencySymbol, getAssignmentSummary } from './orderFormHelpers';
+import { getCurrencySymbol, getAssignmentSummary, formatMoney } from './orderFormHelpers';
 
 const { Text } = Typography;
 
@@ -85,13 +85,13 @@ const OrderLinesCard = ({
       title: 'Precio unit.',
       key: 'up',
       width: 140,
-      render: (_, r) => `${getCurrencySymbol(clientCurrency)} ${new Intl.NumberFormat('es-CO').format(Number(r.unit_price) || 0)} / ${(r.billing_unit || r.packaging_type || 'TALLO').toLowerCase()}`
+      render: (_, r) => `${getCurrencySymbol(clientCurrency)} ${formatMoney(r.unit_price)} / ${(r.billing_unit || r.packaging_type || 'TALLO').toLowerCase()}`
     },
     {
       title: 'Subtotal',
       dataIndex: 'subtotal',
       width: 130,
-      render: (v) => <Text strong>{getCurrencySymbol(clientCurrency)} {new Intl.NumberFormat('es-CO').format(Number(v) || 0)}</Text>
+      render: (v) => <Text strong>{getCurrencySymbol(clientCurrency)} {formatMoney(v)}</Text>
     },
     {
       title: 'Acciones',
@@ -156,7 +156,7 @@ const OrderLinesCard = ({
         </Col>
         <Col>
           <Text strong style={{ fontSize: 18 }}>
-            Total: {getCurrencySymbol(clientCurrency)} {new Intl.NumberFormat('es-CO').format(totalAmount)}
+            Total: {getCurrencySymbol(clientCurrency)} {formatMoney(totalAmount)}
           </Text>
         </Col>
       </Row>

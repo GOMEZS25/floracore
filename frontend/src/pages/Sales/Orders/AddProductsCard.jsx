@@ -5,7 +5,7 @@ import {
 } from 'antd';
 import { PlusOutlined, EyeOutlined, InboxOutlined, AppstoreOutlined } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
-import { buildLotLabel, getCurrencySymbol } from './orderFormHelpers';
+import { buildLotLabel, getCurrencySymbol, formatMoney } from './orderFormHelpers';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -364,7 +364,7 @@ const AddProductsCard = ({ orderId, allLots, allProducts, clientCurrency, onLine
                 <Text style={{ color: '#04342C' }}>
                   Subtotal:{' '}
                   <Text strong style={{ color: '#04342C' }}>
-                    {getCurrencySymbol(clientCurrency)} {new Intl.NumberFormat('es-CO').format(subtotalCalc)}
+                    {getCurrencySymbol(clientCurrency)} {formatMoney(subtotalCalc)}
                   </Text>
                 </Text>
               </span>

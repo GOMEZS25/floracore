@@ -562,6 +562,98 @@ const agregarLinea = async (req, res) => {
     }
 };
 
+// Actualizar línea - solo permitido si no tiene inventario reservado
+const actualizarLinea = async (req, res) => {
+    try {
+        const { detail_id } = req.params;
+        const {
+            packaging_type,
+            quantity,
+            tallos_por_ramo,
+            ramos_por_caja,
+            unit_price,
+            billing_unit,
+        } = req.body;
+
+        if (!packaging_type || !quantity || unit_price === undefined || !billing_unit) {
+            return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
+        }
+
+        const detalle = await prisma.salesOrderDetail.findUnique({
+            where: { detail_id: BigInt(detail_id) },
+            include: { order: true, assignments: true }
+        });
+
+        if (!detalle) {
+            return res.status(404).json({ mensaje: 'Línea no encontrada' });
+        }
+
+        if (!['BORRADOR', 'APROBADA'].includes(detalle.order.status)) {
+            return res.status(400).json({ mensaje: 'Solo se pueden editar líneas de órdenes en Borrador o Aprobadas' });
+        }
+
+        if (detalle.assignments.length > 0) {
+            return res.status(400).json({ mensaje: 'Esta línea tiene inventario reservado. Quita la reserva antes de editarla.' });
+        }
+
+        let total_stems = 0;
+        let total_bunches = null;
+        let total_boxes = null;
+
+        const qty = Number(quantity);
+        const tpr = tallos_por_ramo ? Number(tallos_por_ramo) : 0;
+        const rpc = ramos_por_caja ? Number(ramos_por_caja) : 0;
+
+        if (packaging_type === 'TALLO') {
+            total_stems = qty;
+        } else if (packaging_type === 'RAMO') {
+            total_stems = qty * tpr;
+            total_bunches = qty;
+        } else if (packaging_type === 'CAJA') {
+            total_stems = qty * rpc * tpr;
+            total_bunches = qty * rpc;
+            total_boxes = qty;
+        }
+
+        let subtotal = 0;
+        const price = Number(unit_price);
+        if (billing_unit === 'TALLO') {
+            subtotal = total_stems * price;
+        } else if (billing_unit === 'RAMO') {
+            subtotal = (total_bunches || 0) * price;
+        } else if (billing_unit === 'CAJA') {
+            subtotal = (total_boxes || 0) * price;
+        }
+
+        const stems_per_bunch = tpr || null;
+        const bunches_per_box = rpc || null;
+
+        const actualizado = await prisma.salesOrderDetail.update({
+            where: { detail_id: BigInt(detail_id) },
+            data: {
+                packaging_type,
+                quantity: qty,
+                stems_per_bunch,
+                bunches_per_box,
+                total_stems,
+                total_bunches,
+                total_boxes,
+                unit_price: price,
+                subtotal
+            }
+        });
+
+        return res.status(200).json({
+            mensaje: 'Línea actualizada exitosamente',
+            data: serializeBigInt(actualizado)
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar línea:', error.message);
+        return res.status(500).json({ mensaje: 'Error interno del servidor', detalle: error.message });
+    }
+};
+
 // Eliminar línea - libera todos sus assignments
 const eliminarLinea = async (req, res) => {
     try {
@@ -828,6 +920,7 @@ module.exports = {
     cancelarOrden,
     autoGuardarOrden,
     agregarLinea,
+    actualizarLinea,
     eliminarLinea,
     asignarInventario,
     liberarAsignacion,

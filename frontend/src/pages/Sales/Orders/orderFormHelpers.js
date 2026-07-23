@@ -13,6 +13,9 @@ export const getCurrencySymbol = (currency) => {
   return '$';
 };
 
+export const formatMoney = (value) =>
+  new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0);
+
 export const getAssignmentSummary = (detail) => {
   const total = Number(detail.total_stems) || 0;
   const assigned = (detail.assignments || []).reduce((s, a) => s + Number(a.quantity), 0);

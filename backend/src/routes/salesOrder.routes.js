@@ -12,6 +12,7 @@ const {
     cancelarOrden,
     autoGuardarOrden,
     agregarLinea,
+    actualizarLinea,
     eliminarLinea,
     asignarInventario,
     liberarAsignacion,
@@ -27,6 +28,7 @@ router.get('/orders/next-number', verificarToken, getNextOrderNumber);
 
 router.post('/orders/auto-save', verificarToken, checkPermission('SALES', 'can_create'), autoGuardarOrden);
 router.post('/orders/:id/details', verificarToken, checkPermission('SALES', 'can_create'), agregarLinea);
+router.patch('/orders/details/:detail_id', verificarToken, checkPermission('SALES', 'can_edit'), actualizarLinea);
 router.delete('/orders/details/:detail_id', verificarToken, checkPermission('SALES', 'can_edit'), eliminarLinea);
 
 // Asignación de inventario

@@ -31,6 +31,11 @@ const lotService = {
     return response.data;
   },
 
+  updateCompanySettings: async (data) => {
+    const response = await axiosInstance.patch('/settings/company', data);
+    return response.data;
+  },
+
   getAllVariants: async () => {
     const response = await axiosInstance.get('/products/variants/all');
     return response.data;
