@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Table, Button, Space, Typography, notification } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import salesService from '../../../services/salesService';
 import { formatOrderNumber } from '../../../utils/orderNumber';
 
@@ -135,7 +136,7 @@ const ReservationsModal = ({ open, reservations, loading, onClose, onRemoved, on
         }
         const dateVal = val || record.order?.delivery_date;
         return dateVal
-          ? new Date(dateVal).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+          ? dayjs(dateVal.slice(0, 10)).toDate().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
           : '-';
       }
     },

@@ -184,7 +184,7 @@ const SalesOrdersPage = () => {
       title: 'Fecha Entrega',
       dataIndex: 'delivery_date',
       key: 'delivery_date',
-      render: (val) => val ? new Date(val).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
+      render: (val) => val ? dayjs(val.slice(0, 10)).toDate().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
     },
     {
       title: 'Estado',
@@ -313,6 +313,7 @@ const SalesOrdersPage = () => {
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={6}>
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Buscar</Text>
             <Input.Search
               placeholder="Nº Orden o Cliente..."
               allowClear
@@ -322,6 +323,7 @@ const SalesOrdersPage = () => {
             />
           </Col>
           <Col xs={24} sm={12} md={5}>
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Estado</Text>
             <Select
               style={{ width: '100%' }}
               placeholder="Estado"
@@ -336,6 +338,7 @@ const SalesOrdersPage = () => {
             </Select>
           </Col>
           <Col xs={24} sm={12} md={7}>
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Fecha de Entrega</Text>
             <RangePicker
               style={{ width: '100%' }}
               value={[
@@ -343,9 +346,11 @@ const SalesOrdersPage = () => {
                 filters.fecha_hasta ? dayjs(filters.fecha_hasta) : null,
               ]}
               onChange={handleDateChange}
+              placeholder={['Fecha desde', 'Fecha hasta']}
             />
           </Col>
           <Col xs={4} sm={4} md={2}>
+            <Text style={{ fontSize: 12, display: 'block', marginBottom: 4, visibility: 'hidden' }}>.</Text>
             <Button
               icon={<ReloadOutlined />}
               onClick={fetchOrders}
@@ -353,6 +358,7 @@ const SalesOrdersPage = () => {
             />
           </Col>
           <Col xs={24} sm={12} md={4} style={{ textAlign: 'right' }}>
+            <Text style={{ fontSize: 12, display: 'block', marginBottom: 4, visibility: 'hidden' }}>.</Text>
             <Button
               icon={<SettingOutlined />}
               onClick={() => setConfigOpen(true)}

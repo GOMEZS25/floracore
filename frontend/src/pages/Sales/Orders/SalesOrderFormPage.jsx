@@ -108,7 +108,7 @@ const SalesOrderFormPage = () => {
 
       headerForm.setFieldsValue({
         client_id: data.client_id,
-        delivery_date: data.delivery_date ? dayjs(data.delivery_date) : null,
+        delivery_date: data.delivery_date ? dayjs(data.delivery_date.slice(0, 10)) : null,
         transaction_category_id: data.transaction_category_id,
         notes: data.notes,
       });
