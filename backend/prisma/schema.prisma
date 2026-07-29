@@ -99,6 +99,9 @@ model Product {
   created_at      DateTime @default(now())
   product_type    ProductType @default(SIMPLE)
 
+  weeks_to_cut      Int     @default(0)
+  default_waste_pct Decimal @default(0.00) @db.Decimal(5, 2)
+
   packaging_id Int?
   packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id], onDelete: Restrict)
   category     Category   @relation(fields: [category_id], references: [category_id], onDelete: Restrict)
@@ -262,7 +265,7 @@ model Sowing {
   sowing_id          BigInt       @id @default(autoincrement())
   location_id        Int
   planting_date      DateTime     @db.Date
-  estimated_cut_week Int
+  estimated_cut_week Int? // OBSOLETO: reemplazado por Product.weeks_to_cut
   status             SowingStatus @default(ACTIVA)
   created_by         BigInt
   created_at         DateTime     @default(now())

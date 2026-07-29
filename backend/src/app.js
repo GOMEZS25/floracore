@@ -14,6 +14,7 @@ const lotRoutes = require('./routes/lot.routes');
 const movimientoRoutes = require('./routes/movimientos.routes');
 const clientRoutes = require('./routes/client.routes');
 const sowingRoutes = require('./routes/sowing.routes');
+const projectionRoutes = require('./routes/projection.routes');
 const transactionCategoryRoutes = require('./routes/transactionCategory.routes');
 const salesOrderRoutes = require('./routes/salesOrder.routes');
 const attributeRoutes = require('./routes/attribute.routes');
@@ -36,6 +37,7 @@ app.use('/api/lot', lotRoutes)
 app.use('/api/lot/:lote_id/movimiento', movimientoRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/sowings', sowingRoutes);
+app.use('/api/projections', projectionRoutes);
 app.use('/api/transaction-categories', transactionCategoryRoutes);
 app.use('/api/sales', salesOrderRoutes);
 app.use('/api/attributes', attributeRoutes);
