@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { serializeBigInt } = require('../utils/bigint.helper');
+const { calculateCutWeek } = require('../utils/isoWeek');
 
 
 // SIEMBRAS
@@ -12,7 +13,8 @@ const crearSiembra = async (req, res) => {
         const { location_id, planting_date, estimated_cut_week, details } = req.body;
 
         // Validar campos obligatorios
-        if (!location_id || !planting_date || !estimated_cut_week || !details || !Array.isArray(details) || details.length === 0) {
+        // estimated_cut_week OBSOLETO: ya no se exige, ver Product.weeks_to_cut
+        if (!location_id || !planting_date || !details || !Array.isArray(details) || details.length === 0) {
             return res.status(400).json({ mensaje: 'Todos los campos son obligatorios y details debe ser un array válido' });
         }
 
@@ -57,19 +59,11 @@ const crearSiembra = async (req, res) => {
                 });
             }
 
-            const dateObj = new Date(planting_date);
-            let yearDeCorte = dateObj.getFullYear();
-            // Lógica simple: si la semana de corte es baja y sembramos a fines de año, asume año siguiente
-            if (Number(estimated_cut_week) < 20 && dateObj.getMonth() >= 8) {
-                yearDeCorte += 1;
-            }
-
-            // Crear la nueva siembra con su respectiva proyección por defecto
-            siembra = await tx.sowing.create({
+            const nuevaSiembra = await tx.sowing.create({
                 data: {
                     location_id: Number(location_id),
                     planting_date: new Date(planting_date),
-                    estimated_cut_week: Number(estimated_cut_week),
+                    estimated_cut_week: estimated_cut_week !== undefined ? Number(estimated_cut_week) : undefined,
                     created_by: BigInt(req.usuario.id),
                     details: {
                         create: details.map(d => ({
@@ -77,19 +71,37 @@ const crearSiembra = async (req, res) => {
                             stems_planted: Number(d.stems_planted)
                         }))
                     },
-                    projections: {
-                        create: {
-                            week_number: Number(estimated_cut_week),
-                            year: yearDeCorte,
-                            details: {
-                                create: details.map(d => ({
-                                    product_id: BigInt(d.product_id),
-                                    stems_projected: Number(d.stems_planted)
-                                }))
+                },
+            });
+
+            // Una proyección por producto: cada uno tiene su propio
+            // weeks_to_cut y default_waste_pct
+            const productosPorId = new Map(productos.map(p => [p.product_id.toString(), p]));
+
+            for (const d of details) {
+                const producto = productosPorId.get(String(d.product_id));
+                const { week_number, year } = calculateCutWeek(planting_date, producto.weeks_to_cut);
+                const stemsProjected = Math.round(
+                    Number(d.stems_planted) * (1 - Number(producto.default_waste_pct) / 100)
+                );
+
+                await tx.projection.create({
+                    data: {
+                        sowing_id: nuevaSiembra.sowing_id,
+                        week_number,
+                        year,
+                        details: {
+                            create: {
+                                product_id: BigInt(d.product_id),
+                                stems_projected: stemsProjected,
                             }
                         }
-                    }
-                },
+                    },
+                });
+            }
+
+            siembra = await tx.sowing.findUnique({
+                where: { sowing_id: nuevaSiembra.sowing_id },
                 include: {
                     details: true,
                     projections: {
