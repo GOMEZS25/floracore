@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Table, Row, Col, Space, Tag, Tooltip, Button, Popconfirm, Progress, Typography } from 'antd';
+import { Card, Table, Row, Col, Space, Tag, Tooltip, Button, Popconfirm, Progress, Typography, Divider } from 'antd';
 import { EditOutlined, LinkOutlined, DeleteOutlined } from '@ant-design/icons';
 import { getCurrencySymbol, getAssignmentSummary, formatMoney } from './orderFormHelpers';
 
@@ -85,12 +85,14 @@ const OrderLinesCard = ({
       title: 'Precio unit.',
       key: 'up',
       width: 140,
+      align: 'right',
       render: (_, r) => `${getCurrencySymbol(clientCurrency)} ${formatMoney(r.unit_price)} / ${(r.billing_unit || r.packaging_type || 'TALLO').toLowerCase()}`
     },
     {
       title: 'Subtotal',
       dataIndex: 'subtotal',
       width: 130,
+      align: 'right',
       render: (v) => <Text strong>{getCurrencySymbol(clientCurrency)} {formatMoney(v)}</Text>
     },
     {
@@ -135,8 +137,15 @@ const OrderLinesCard = ({
     }
   ];
 
+  const summaryLabelStyle = { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#8c8c8c' };
+
   return (
-    <Card title="Líneas de la Orden" style={{ borderRadius: 8, overflow: 'hidden' }}>
+    <Card
+      title="Líneas de la Orden"
+      variant="borderless"
+      style={{ borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+      styles={{ header: { border: 'none' }, body: { paddingTop: 8 } }}
+    >
       <Table
         columns={detailColumns}
         dataSource={orderLines}
@@ -145,19 +154,29 @@ const OrderLinesCard = ({
         scroll={{ x: 900 }}
         locale={{ emptyText: 'No hay líneas.' }}
       />
-      <Row justify="space-between" align="middle" style={{ marginTop: 16 }}>
+      <Divider style={{ margin: '16px 0' }} />
+      <Row justify="space-between" align="middle" wrap gutter={[16, 12]}>
         <Col>
-          <Space>
-            <Text type="secondary">Tallos totales: <Text strong>{totalTallos}</Text></Text>
-            <Text type="secondary">
-              Asignados: <Text strong style={{ color: totalAsignados === totalTallos && totalTallos > 0 ? '#52c41a' : '#faad14' }}>{totalAsignados}</Text>
-            </Text>
+          <Space size={32}>
+            <Space direction="vertical" size={0}>
+              <Text style={summaryLabelStyle}>Tallos totales</Text>
+              <Text strong style={{ fontSize: 16 }}>{totalTallos}</Text>
+            </Space>
+            <Space direction="vertical" size={0}>
+              <Text style={summaryLabelStyle}>Asignados</Text>
+              <Text strong style={{ fontSize: 16, color: totalAsignados === totalTallos && totalTallos > 0 ? '#52c41a' : '#faad14' }}>
+                {totalAsignados}
+              </Text>
+            </Space>
           </Space>
         </Col>
-        <Col>
-          <Text strong style={{ fontSize: 18 }}>
-            Total: {getCurrencySymbol(clientCurrency)} {formatMoney(totalAmount)}
-          </Text>
+        <Col style={{ textAlign: 'right' }}>
+          <Space direction="vertical" size={0}>
+            <Text style={summaryLabelStyle}>Total</Text>
+            <Text strong style={{ fontSize: 20, color: '#1a3c2e' }}>
+              {getCurrencySymbol(clientCurrency)} {formatMoney(totalAmount)}
+            </Text>
+          </Space>
         </Col>
       </Row>
     </Card>
