@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Select, DatePicker, Input, Button,
   Typography, Row, Col, Card, Spin, notification, Popconfirm, Modal,
-  Space, Tag
+  Space, Tag, Tooltip
 } from 'antd';
 import {
   ArrowLeftOutlined, PlusOutlined,
   CheckCircleOutlined, CarOutlined, CloseCircleOutlined, RollbackOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined, SaveOutlined, PrinterOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -28,11 +28,11 @@ const { Option } = Select;
 const { Title } = Typography;
 const { TextArea } = Input;
 
-const STATUS_TAG = {
-  BORRADOR: { color: 'warning', text: 'BORRADOR' },
-  APROBADA: { color: 'processing', text: 'APROBADA' },
-  DESPACHADA: { color: 'success', text: 'DESPACHADA' },
-  CANCELADA: { color: 'error', text: 'CANCELADA' }
+const STATUS_BADGE = {
+  BORRADOR: { bg: 'var(--fc-badge-draft-bg)', text: 'var(--fc-badge-draft-text)', label: 'BORRADOR' },
+  APROBADA: { bg: 'var(--fc-badge-approved-bg)', text: 'var(--fc-badge-approved-text)', label: 'APROBADA' },
+  DESPACHADA: { bg: 'var(--fc-badge-dispatched-bg)', text: 'var(--fc-badge-dispatched-text)', label: 'DESPACHADA' },
+  CANCELADA: { bg: 'var(--fc-badge-canceled-bg)', text: 'var(--fc-badge-canceled-text)', label: 'CANCELADA' },
 };
 
 const SalesOrderFormPage = () => {
@@ -231,6 +231,14 @@ const SalesOrderFormPage = () => {
     }
   };
 
+  const handleGuardar = () => {
+    if (!orderId) {
+      notification.info({ message: 'Completa los datos generales para guardar el borrador' });
+      return;
+    }
+    notification.success({ message: 'Orden guardada' });
+  };
+
   const handleDispatchClick = () => {
     const hasAnyAssignment = orderLines.some(l => (l.assignments || []).length > 0);
     if (hasAnyAssignment) {
@@ -341,47 +349,67 @@ const SalesOrderFormPage = () => {
     <Spin spinning={loading}>
       <div style={{ padding: '24px' }}>
 
-        <Row justify="space-between" align="middle" wrap style={{ marginBottom: 20, rowGap: 12 }}>
-          <Col>
-            <Space size={16} align="center">
-              <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/sales/orders')}>Volver</Button>
-              <Space size={10} align="center">
-                <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600 }}>
-                  {orderData ? `Orden ${formatOrderNumber(orderData.order_number)}` : 'Nueva Orden'}
-                </Title>
-                {status && STATUS_TAG[status] && (
-                  <Tag color={STATUS_TAG[status].color} style={{ fontSize: 13, padding: '2px 12px', fontWeight: 600, margin: 0, borderRadius: 20 }}>
-                    {STATUS_TAG[status].text}
-                  </Tag>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{
+            fontSize: 11,
+            textTransform: 'uppercase',
+            letterSpacing: 1.2,
+            color: 'var(--fc-text-muted)',
+            marginBottom: 8,
+          }}>
+            <span
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate('/sales/orders')}
+            >ÓRDENES DE VENTA</span>
+            <span style={{ margin: '0 8px' }}>/</span>
+            <span>{orderData ? 'EDITAR' : 'NUEVA'}</span>
+          </div>
+
+          <Row justify="space-between" align="middle" wrap style={{ rowGap: 12 }}>
+            <Col>
+              <Title level={2} style={{
+                margin: 0,
+                fontWeight: 600,
+                color: 'var(--fc-text-primary)',
+                fontSize: 28,
+                display: 'inline-block',
+                marginRight: 12,
+              }}>
+                {orderData ? `Orden ${formatOrderNumber(orderData.order_number)}` : 'Nueva Orden'}
+              </Title>
+              {status && STATUS_BADGE[status] && (
+                <span style={{
+                  backgroundColor: STATUS_BADGE[status].bg,
+                  color: STATUS_BADGE[status].text,
+                  padding: '4px 12px',
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                  verticalAlign: 'middle',
+                }}>
+                  {STATUS_BADGE[status].label}
+                </span>
+              )}
+            </Col>
+            <Col>
+              <Space size={12} align="center">
+                <Button icon={<SaveOutlined />} onClick={handleGuardar}>Guardar</Button>
+                <Tooltip title="Próximamente">
+                  <Button icon={<PrinterOutlined />} disabled>Imprimir</Button>
+                </Tooltip>
+                {status === 'BORRADOR' && orderLines.length > 0 && (
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    onClick={() => handleChangeStatus('APROBADA')}
+                  >Confirmar orden</Button>
                 )}
               </Space>
-            </Space>
-          </Col>
-          <Col>
-            <Space size={12} align="center" wrap>
-              {orderId && status === 'BORRADOR' && orderLines.length > 0 && (
-                <Button icon={<CheckCircleOutlined />} type="primary" style={{ backgroundColor: 'var(--fc-accent)' }} onClick={() => handleChangeStatus('APROBADA')}>Aprobar</Button>
-              )}
-              {orderId && status === 'APROBADA' && (
-                <Button icon={<RollbackOutlined />} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }} onClick={() => handleChangeStatus('BORRADOR')}>Devolver a Borrador</Button>
-              )}
-              {orderId && status === 'APROBADA' && (
-                <Button icon={<CarOutlined />} type="primary" style={{ backgroundColor: 'var(--fc-accent)' }} onClick={handleDispatchClick}>Despachar</Button>
-              )}
-              {orderId && (status === 'BORRADOR' || status === 'APROBADA') && (
-                <Popconfirm title="¿Cancelar orden?" onConfirm={() => handleChangeStatus('CANCELADA')} okText="Sí" cancelText="No">
-                  <Button icon={<CloseCircleOutlined />} danger type="default">Cancelar</Button>
-                </Popconfirm>
-              )}
-              {orderId && status === 'DESPACHADA' && (
-                <Button icon={<CloseCircleOutlined />} danger type="default" onClick={handleCancelDespachadaClick}>Cancelar</Button>
-              )}
-              <Button type="text" icon={<PlusOutlined />} onClick={() => navigate('/sales/orders/new')} style={{ color: '#8c8c8c' }}>
-                Nueva Orden
-              </Button>
-            </Space>
-          </Col>
-        </Row>
+            </Col>
+          </Row>
+        </div>
 
         <Card
           title="Datos Generales"
