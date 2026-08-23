@@ -79,7 +79,7 @@ const AssignInventoryModal = ({ open, detail, allLots, onClose, onSubmit, onRele
         <Button
           key="submit"
           type="primary"
-          style={{ backgroundColor: '#1a3c2e' }}
+          style={{ backgroundColor: 'var(--fc-accent)' }}
           loading={submitting}
           onClick={handleSubmit}
           disabled={newAssignmentSum > pending}

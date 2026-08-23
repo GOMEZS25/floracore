@@ -41,7 +41,7 @@ const EditLineModal = ({ open, detail, onClose, onSubmit, clientCurrency }) => {
       width={600}
       footer={[
         <Button key="cancel" onClick={onClose}>Cancelar</Button>,
-        <Button key="submit" type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={() => form.submit()}>
+        <Button key="submit" type="primary" style={{ backgroundColor: 'var(--fc-accent)' }} onClick={() => form.submit()}>
           Guardar cambios
         </Button>
       ]}

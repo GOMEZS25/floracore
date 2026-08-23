@@ -191,9 +191,22 @@ const SalesOrdersPage = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Tag color={STATUS_TAG_COLOR[status] || 'default'} style={{ fontWeight: 'bold' }}>
-          {status}
-        </Tag>
+        status === 'BORRADOR' ? (
+          <Tag
+            style={{
+              fontWeight: 'bold',
+              backgroundColor: 'var(--fc-badge-draft-bg)',
+              color: 'var(--fc-badge-draft-text)',
+              borderColor: 'var(--fc-badge-draft-bg)',
+            }}
+          >
+            {status}
+          </Tag>
+        ) : (
+          <Tag color={STATUS_TAG_COLOR[status] || 'default'} style={{ fontWeight: 'bold' }}>
+            {status}
+          </Tag>
+        )
       )
     },
     {
@@ -236,7 +249,7 @@ const SalesOrdersPage = () => {
               size="small"
               icon={<EyeOutlined />}
               onClick={() => navigate(`/sales/orders/${record.order_id}`)}
-              style={{ borderColor: '#d9d9d9', color: '#1a3c2e' }}
+              style={{ borderColor: '#d9d9d9', color: 'var(--fc-accent)' }}
             />
           </Tooltip>
 
@@ -303,7 +316,7 @@ const SalesOrdersPage = () => {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/sales/orders/new')}
-            style={{ backgroundColor: '#1a3c2e' }}
+            style={{ backgroundColor: 'var(--fc-accent)' }}
           >
             Nueva Orden
           </Button>

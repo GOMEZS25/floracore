@@ -164,7 +164,7 @@ const AddProductsCard = ({ orderId, allLots, allProducts, clientCurrency, onLine
     { title: 'Disponibilidad', dataIndex: 'cantidad_disponible' },
     {
       title: 'Seleccionar', key: 'sel', render: (_, lote) => (
-        <Button size="small" type="primary" style={{ backgroundColor: '#1a3c2e' }}
+        <Button size="small" type="primary" style={{ backgroundColor: 'var(--fc-accent)' }}
           onClick={() => {
             setFilteredLots([lote]);  // ← primero actualizar las opciones
             setTimeout(() => {        // ← luego setear el valor
@@ -182,7 +182,7 @@ const AddProductsCard = ({ orderId, allLots, allProducts, clientCurrency, onLine
       <Card
         title="Agregar Productos"
         variant="borderless"
-        style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+        style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
         styles={{ header: { border: 'none' }, body: { paddingTop: 8 } }}
         extra={
           <Space size={16} align="center">
@@ -391,7 +391,7 @@ const AddProductsCard = ({ orderId, allLots, allProducts, clientCurrency, onLine
                 htmlType="submit"
                 icon={<PlusOutlined />}
                 loading={submitting}
-                style={{ backgroundColor: '#1a3c2e' }}
+                style={{ backgroundColor: 'var(--fc-accent)' }}
               >
                 Agregar línea
               </Button>

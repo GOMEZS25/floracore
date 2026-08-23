@@ -360,13 +360,13 @@ const SalesOrderFormPage = () => {
           <Col>
             <Space size={12} align="center" wrap>
               {orderId && status === 'BORRADOR' && orderLines.length > 0 && (
-                <Button icon={<CheckCircleOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={() => handleChangeStatus('APROBADA')}>Aprobar</Button>
+                <Button icon={<CheckCircleOutlined />} type="primary" style={{ backgroundColor: 'var(--fc-accent)' }} onClick={() => handleChangeStatus('APROBADA')}>Aprobar</Button>
               )}
               {orderId && status === 'APROBADA' && (
                 <Button icon={<RollbackOutlined />} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }} onClick={() => handleChangeStatus('BORRADOR')}>Devolver a Borrador</Button>
               )}
               {orderId && status === 'APROBADA' && (
-                <Button icon={<CarOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={handleDispatchClick}>Despachar</Button>
+                <Button icon={<CarOutlined />} type="primary" style={{ backgroundColor: 'var(--fc-accent)' }} onClick={handleDispatchClick}>Despachar</Button>
               )}
               {orderId && (status === 'BORRADOR' || status === 'APROBADA') && (
                 <Popconfirm title="¿Cancelar orden?" onConfirm={() => handleChangeStatus('CANCELADA')} okText="Sí" cancelText="No">
@@ -386,7 +386,7 @@ const SalesOrderFormPage = () => {
         <Card
           title="Datos Generales"
           variant="borderless"
-          style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+          style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
           styles={{ header: { border: 'none' }, body: { paddingTop: 8 } }}
         >
           <Form form={headerForm} layout="vertical" disabled={isReadOnly}>
