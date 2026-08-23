@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Form, Select, InputNumber, Input, Button, Row, Col, Segmented,
-  Alert, Typography, Space, Modal, Table, notification
+  Alert, Typography, Space, Modal, Table, notification, Divider
 } from 'antd';
 import { PlusOutlined, EyeOutlined, InboxOutlined, AppstoreOutlined } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
@@ -181,8 +181,9 @@ const AddProductsCard = ({ orderId, allLots, allProducts, clientCurrency, onLine
     <>
       <Card
         title="Agregar Productos"
-        style={{ marginBottom: 24, borderRadius: 8, borderColor: '#d9d9d9' }}
-        styles={{ header: { backgroundColor: '#f5f5f5' } }}
+        variant="borderless"
+        style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+        styles={{ header: { border: 'none' }, body: { paddingTop: 8 } }}
         extra={
           <Space size={16} align="center">
             <Segmented
@@ -210,7 +211,9 @@ const AddProductsCard = ({ orderId, allLots, allProducts, clientCurrency, onLine
 
         <Form form={form} layout="vertical" onFinish={handleAddLineSubmit} className="add-line-form" onKeyDown={handleEnterToNext}>
 
-          {/* Producto */}
+          <Divider titlePlacement="left" plain styles={{ content: { margin: 0 } }} style={{ margin: '0 0 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#8c8c8c' }}>
+            Producto
+          </Divider>
           <Row gutter={16}>
             {addMode === 'LOTE' ? (
               <Col xs={24} md={12}>
@@ -298,49 +301,59 @@ const AddProductsCard = ({ orderId, allLots, allProducts, clientCurrency, onLine
             )}
           </Row>
 
-          {/* Desglose de empaque y Precio */}
-          {lineVals.packaging_type && (
-            <Row gutter={16}>
-              {lineVals.packaging_type === 'CAJA' && (
-                <Col xs={24} md={6}>
-                  <Form.Item name="ramos_por_caja" label="Ramos por caja" rules={[{ required: true }]}>
-                    <InputNumber min={1} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              )}
-              {(lineVals.packaging_type === 'RAMO' || lineVals.packaging_type === 'CAJA') && (
+          {/* Composición del empaque */}
+          {(lineVals.packaging_type === 'RAMO' || lineVals.packaging_type === 'CAJA') && (
+            <>
+              <Divider titlePlacement="left" plain styles={{ content: { margin: 0 } }} style={{ margin: '0 0 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#8c8c8c' }}>
+                Composición del empaque
+              </Divider>
+              <Row gutter={16}>
+                {lineVals.packaging_type === 'CAJA' && (
+                  <Col xs={24} md={6}>
+                    <Form.Item name="ramos_por_caja" label="Ramos por caja" rules={[{ required: true }]}>
+                      <InputNumber min={1} style={{ width: '100%' }} />
+                    </Form.Item>
+                  </Col>
+                )}
                 <Col xs={24} md={6}>
                   <Form.Item name="tallos_por_ramo" label="Tallos por ramo" rules={[{ required: true }]}>
                     <InputNumber min={1} style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
-              )}
-              <Col xs={24} md={6}>
-                <Form.Item name="unit_price" label={priceLabel()} rules={[{ required: true }]}>
-                  <InputNumber
-                    addonBefore={getCurrencySymbol(clientCurrency)}
-                    min={0}
-                    step={0.01}
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={6}>
-                <Form.Item name="billing_unit" label="Se cobra por" rules={[{ required: true }]}>
-                  <Select options={billingOptions()} />
-                </Form.Item>
-              </Col>
-            </Row>
+              </Row>
+            </>
           )}
 
-          {/* Notas */}
-          <Row gutter={16}>
-            <Col xs={24}>
-              <Form.Item name="notes" label="Notas">
-                <Input placeholder="Opcional..." />
-              </Form.Item>
-            </Col>
-          </Row>
+          {/* Precio */}
+          {lineVals.packaging_type && (
+            <>
+              <Divider titlePlacement="left" plain styles={{ content: { margin: 0 } }} style={{ margin: '0 0 16px', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, color: '#8c8c8c' }}>
+                Precio
+              </Divider>
+              <Row gutter={16}>
+                <Col xs={24} md={8}>
+                  <Form.Item name="unit_price" label={priceLabel()} rules={[{ required: true }]}>
+                    <InputNumber
+                      prefix={getCurrencySymbol(clientCurrency)}
+                      min={0}
+                      step={0.01}
+                      style={{ width: '100%' }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="billing_unit" label="Se cobra por" rules={[{ required: true }]}>
+                    <Select options={billingOptions()} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Form.Item name="notes" label="Notas">
+                    <Input placeholder="Opcional..." />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          )}
 
           {/* Franja de resultado */}
           {Number(totalStemsCalc) > 0 && (

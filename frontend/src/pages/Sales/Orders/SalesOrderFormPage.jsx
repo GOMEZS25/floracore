@@ -341,58 +341,53 @@ const SalesOrderFormPage = () => {
     <Spin spinning={loading}>
       <div style={{ padding: '24px' }}>
 
-        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Row justify="space-between" align="middle" wrap style={{ marginBottom: 20, rowGap: 12 }}>
           <Col>
             <Space size={16} align="center">
-              <Button type="default" icon={<ArrowLeftOutlined />} onClick={() => navigate('/sales/orders')}>Volver</Button>
-              <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600 }}>
-                {orderData ? `Orden ${formatOrderNumber(orderData.order_number)}` : 'Nueva Orden'}
-              </Title>
+              <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/sales/orders')}>Volver</Button>
+              <Space size={10} align="center">
+                <Title level={3} style={{ margin: 0, color: '#595959', fontWeight: 600 }}>
+                  {orderData ? `Orden ${formatOrderNumber(orderData.order_number)}` : 'Nueva Orden'}
+                </Title>
+                {status && STATUS_TAG[status] && (
+                  <Tag color={STATUS_TAG[status].color} style={{ fontSize: 13, padding: '2px 12px', fontWeight: 600, margin: 0, borderRadius: 20 }}>
+                    {STATUS_TAG[status].text}
+                  </Tag>
+                )}
+              </Space>
             </Space>
           </Col>
           <Col>
-            <Button icon={<PlusOutlined />} onClick={() => navigate('/sales/orders/new')} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }}>
-              Nueva Orden
-            </Button>
+            <Space size={12} align="center" wrap>
+              {orderId && status === 'BORRADOR' && orderLines.length > 0 && (
+                <Button icon={<CheckCircleOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={() => handleChangeStatus('APROBADA')}>Aprobar</Button>
+              )}
+              {orderId && status === 'APROBADA' && (
+                <Button icon={<RollbackOutlined />} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }} onClick={() => handleChangeStatus('BORRADOR')}>Devolver a Borrador</Button>
+              )}
+              {orderId && status === 'APROBADA' && (
+                <Button icon={<CarOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={handleDispatchClick}>Despachar</Button>
+              )}
+              {orderId && (status === 'BORRADOR' || status === 'APROBADA') && (
+                <Popconfirm title="¿Cancelar orden?" onConfirm={() => handleChangeStatus('CANCELADA')} okText="Sí" cancelText="No">
+                  <Button icon={<CloseCircleOutlined />} danger type="default">Cancelar</Button>
+                </Popconfirm>
+              )}
+              {orderId && status === 'DESPACHADA' && (
+                <Button icon={<CloseCircleOutlined />} danger type="default" onClick={handleCancelDespachadaClick}>Cancelar</Button>
+              )}
+              <Button type="text" icon={<PlusOutlined />} onClick={() => navigate('/sales/orders/new')} style={{ color: '#8c8c8c' }}>
+                Nueva Orden
+              </Button>
+            </Space>
           </Col>
         </Row>
 
         <Card
-          title={
-            <Space size={10} align="center">
-              <span>Datos Generales</span>
-              {status && STATUS_TAG[status] && (
-                <Tag color={STATUS_TAG[status].color} style={{ fontSize: 13, padding: '2px 10px', fontWeight: 600, margin: 0 }}>
-                  {STATUS_TAG[status].text}
-                </Tag>
-              )}
-            </Space>
-          }
-          extra={
-            orderId && (
-              <Space size={12} align="center">
-                {status === 'BORRADOR' && orderLines.length > 0 && (
-                  <Button icon={<CheckCircleOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={() => handleChangeStatus('APROBADA')}>Aprobar</Button>
-                )}
-                {status === 'APROBADA' && (
-                  <Button icon={<RollbackOutlined />} style={{ color: '#8c8c8c', borderColor: '#8c8c8c' }} onClick={() => handleChangeStatus('BORRADOR')}>Devolver a Borrador</Button>
-                )}
-                {status === 'APROBADA' && (
-                  <Button icon={<CarOutlined />} type="primary" style={{ backgroundColor: '#1a3c2e' }} onClick={handleDispatchClick}>Despachar</Button>
-                )}
-                {(status === 'BORRADOR' || status === 'APROBADA') && (
-                  <Popconfirm title="¿Cancelar orden?" onConfirm={() => handleChangeStatus('CANCELADA')} okText="Sí" cancelText="No">
-                    <Button icon={<CloseCircleOutlined />} danger type="default">Cancelar</Button>
-                  </Popconfirm>
-                )}
-                {status === 'DESPACHADA' && (
-                  <Button icon={<CloseCircleOutlined />} danger type="default" onClick={handleCancelDespachadaClick}>Cancelar</Button>
-                )}
-              </Space>
-            )
-          }
-          style={{ marginBottom: 24, borderRadius: 8, overflow: 'hidden' }}
-          styles={{ header: { backgroundColor: '#f5f5f5' } }}
+          title="Datos Generales"
+          variant="borderless"
+          style={{ marginBottom: 24, borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+          styles={{ header: { border: 'none' }, body: { paddingTop: 8 } }}
         >
           <Form form={headerForm} layout="vertical" disabled={isReadOnly}>
             <Row gutter={16}>
