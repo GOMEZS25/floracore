@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Table, Select, InputNumber, Button, Tag, Popconfirm, Tooltip, Typography, notification } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Card, Table, Select, InputNumber, Button, Tag, Popconfirm, Tooltip, Typography, notification, Space } from 'antd';
+import { PlusOutlined, DeleteOutlined, SaveOutlined, UndoOutlined } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
 import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
 
@@ -16,6 +16,9 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     billing_unit: 'TALLO',
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const [rowEdits, setRowEdits] = useState({});
+  const [savingRowId, setSavingRowId] = useState(null);
 
   const handleAdd = async () => {
     const { product_variant_key, cantidad_cajas, ramos_por_caja, tallos_por_ramo, unit_price } = captureRow;
@@ -89,6 +92,68 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     (Number(captureRow.ramos_por_caja) || 0) *
     (Number(captureRow.tallos_por_ramo) || 0);
 
+  const getRowValue = (row, field) => {
+    const detailId = row.detail_id || row.id;
+    if (rowEdits[detailId] && rowEdits[detailId][field] !== undefined) {
+      return rowEdits[detailId][field];
+    }
+    return row[field];
+  };
+
+  const isRowDirty = (row) => {
+    const detailId = row.detail_id || row.id;
+    const edits = rowEdits[detailId];
+    if (!edits) return false;
+    return Object.keys(edits).some(field => edits[field] !== row[field]);
+  };
+
+  const updateRowField = (row, field, value) => {
+    const detailId = row.detail_id || row.id;
+    setRowEdits(prev => ({
+      ...prev,
+      [detailId]: {
+        ...(prev[detailId] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const cancelRowEdits = (row) => {
+    const detailId = row.detail_id || row.id;
+    setRowEdits(prev => {
+      const next = { ...prev };
+      delete next[detailId];
+      return next;
+    });
+  };
+
+  const saveRow = async (row) => {
+    const detailId = row.detail_id || row.id;
+    const edits = rowEdits[detailId] || {};
+    const payload = {
+      quantity: edits.quantity !== undefined ? edits.quantity : row.quantity,
+      bunches_per_box: edits.bunches_per_box !== undefined ? edits.bunches_per_box : row.bunches_per_box,
+      stems_per_bunch: edits.stems_per_bunch !== undefined ? edits.stems_per_bunch : row.stems_per_bunch,
+      unit_price: edits.unit_price !== undefined ? edits.unit_price : row.unit_price,
+      billing_unit: edits.billing_unit !== undefined ? edits.billing_unit : row.billing_unit,
+    };
+
+    setSavingRowId(detailId);
+    try {
+      await salesService.actualizarLinea(detailId, payload);
+      notification.success({ message: 'Línea actualizada' });
+      cancelRowEdits(row);
+      onLinesChanged();
+    } catch (error) {
+      notification.error({
+        message: 'Error al actualizar línea',
+        description: error.response?.data?.mensaje || 'Error desconocido',
+      });
+    } finally {
+      setSavingRowId(null);
+    }
+  };
+
   const labelStyle = { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--fc-text-secondary)', fontWeight: 500 };
   const fixedTagStyle = { padding: '4px 11px', border: '1px solid var(--fc-border)', borderRadius: 8, backgroundColor: '#f9fafb', color: 'var(--fc-text-secondary)', fontSize: 14 };
 
@@ -110,37 +175,88 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     },
     {
       title: 'CAJAS',
-      dataIndex: 'total_boxes',
-      render: (v, r) => v ?? (r.packaging_type === 'CAJA' ? r.quantity : '—'),
-      width: 80,
+      key: 'cajas',
+      width: 90,
       align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={1}
+          size="small"
+          value={getRowValue(r, 'quantity')}
+          onChange={(v) => updateRowField(r, 'quantity', v)}
+          disabled={isReadOnly}
+          style={{ width: '100%' }}
+        />
+      ),
     },
     {
       title: 'RAMOS/CAJA',
-      dataIndex: 'bunches_per_box',
-      render: (v) => (v != null ? v : '—'),
-      width: 100,
+      key: 'ramos_caja',
+      width: 110,
       align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={1}
+          size="small"
+          value={getRowValue(r, 'bunches_per_box')}
+          onChange={(v) => updateRowField(r, 'bunches_per_box', v)}
+          disabled={isReadOnly}
+          style={{ width: '100%' }}
+        />
+      ),
     },
     {
       title: 'TALLOS/RAMO',
-      dataIndex: 'stems_per_bunch',
-      render: (v) => (v != null ? v : '—'),
-      width: 100,
+      key: 'tallos_ramo',
+      width: 110,
       align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={1}
+          size="small"
+          value={getRowValue(r, 'stems_per_bunch')}
+          onChange={(v) => updateRowField(r, 'stems_per_bunch', v)}
+          disabled={isReadOnly}
+          style={{ width: '100%' }}
+        />
+      ),
     },
     {
       title: 'UNIT PRICE',
       key: 'unit_price',
-      render: (_, r) => `${getCurrencySymbol(clientCurrency)} ${formatMoney(r.unit_price)}`,
-      width: 120,
+      width: 130,
       align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          step={0.01}
+          size="small"
+          prefix={getCurrencySymbol(clientCurrency)}
+          value={getRowValue(r, 'unit_price')}
+          onChange={(v) => updateRowField(r, 'unit_price', v)}
+          disabled={isReadOnly}
+          style={{ width: '100%' }}
+        />
+      ),
     },
     {
       title: 'PRICE UNIT',
       key: 'price_unit',
-      render: (_, r) => (r.billing_unit || 'CAJA').toUpperCase(),
-      width: 90,
+      width: 100,
+      render: (_, r) => (
+        <Select
+          size="small"
+          value={getRowValue(r, 'billing_unit') || 'CAJA'}
+          onChange={(v) => updateRowField(r, 'billing_unit', v)}
+          disabled={isReadOnly}
+          style={{ width: '100%' }}
+          options={[
+            { value: 'TALLO', label: 'TALLO' },
+            { value: 'RAMO', label: 'RAMO' },
+            { value: 'CAJA', label: 'CAJA' },
+          ]}
+        />
+      ),
     },
     {
       title: 'TOTAL TALLOS',
@@ -158,23 +274,52 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     {
       title: '',
       key: 'acciones',
-      width: 60,
-      render: (_, r) => isReadOnly ? null : (
-        <Popconfirm
-          title="¿Eliminar línea?"
-          onConfirm={async () => {
-            try {
-              await salesService.eliminarLinea(r.detail_id || r.id);
-              notification.success({ message: 'Línea eliminada' });
-              onLinesChanged();
-            } catch (e) {
-              notification.error({ message: 'Error al eliminar' });
-            }
-          }}
-        >
-          <Button danger size="small" icon={<DeleteOutlined />} />
-        </Popconfirm>
-      ),
+      width: 120,
+      render: (_, r) => {
+        if (isReadOnly) return null;
+        const dirty = isRowDirty(r);
+        const detailId = r.detail_id || r.id;
+        return (
+          <Space size={4}>
+            {dirty && (
+              <>
+                <Tooltip title="Guardar cambios">
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<SaveOutlined />}
+                    loading={savingRowId === detailId}
+                    onClick={() => saveRow(r)}
+                  />
+                </Tooltip>
+                <Tooltip title="Descartar cambios">
+                  <Button
+                    size="small"
+                    icon={<UndoOutlined />}
+                    onClick={() => cancelRowEdits(r)}
+                  />
+                </Tooltip>
+              </>
+            )}
+            {!dirty && (
+              <Popconfirm
+                title="¿Eliminar línea?"
+                onConfirm={async () => {
+                  try {
+                    await salesService.eliminarLinea(detailId);
+                    notification.success({ message: 'Línea eliminada' });
+                    onLinesChanged();
+                  } catch (e) {
+                    notification.error({ message: 'Error al eliminar' });
+                  }
+                }}
+              >
+                <Button danger size="small" icon={<DeleteOutlined />} />
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -298,6 +443,12 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
 
       <div style={{ height: 1, backgroundColor: 'var(--fc-border)', margin: '12px 0' }} />
 
+      <style>{`
+        .floracore-row-dirty > td {
+          background-color: var(--fc-accent-soft) !important;
+        }
+      `}</style>
+
       <Table
         columns={columns}
         dataSource={orderLines}
@@ -305,6 +456,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         pagination={false}
         scroll={{ x: 1100 }}
         locale={{ emptyText: 'No hay líneas todavía' }}
+        rowClassName={(r) => isRowDirty(r) ? 'floracore-row-dirty' : ''}
       />
     </Card>
   );

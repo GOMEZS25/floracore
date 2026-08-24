@@ -418,7 +418,7 @@ const SalesOrderFormPage = () => {
           </Row>
         </div>
 
-        <Row gutter={24}>
+        <Row gutter={24} style={{ marginBottom: 0 }}>
         <Col xs={24} md={16}>
 
         <Card
@@ -519,6 +519,62 @@ const SalesOrderFormPage = () => {
           </Form>
         </Card>
 
+        </Col>
+
+        <Col xs={0} md={8}>
+          <div style={{
+            backgroundColor: 'var(--fc-surface-dark)',
+            color: 'var(--fc-text-on-dark)',
+            borderRadius: 12,
+            padding: 24,
+          }}>
+            <div style={{
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 1.2,
+              color: 'var(--fc-text-muted)',
+              marginBottom: 16,
+            }}>Resumen</div>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
+              fontSize: 14,
+            }}>
+              <span>Subtotal</span>
+              <span>{formatCurrency(totalAmount)}</span>
+            </div>
+
+            <div style={{
+              height: 1,
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              margin: '16px 0',
+            }} />
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 8,
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Total</span>
+              <span style={{ fontSize: 22, fontWeight: 700 }}>
+                {formatCurrency(totalAmount)}
+              </span>
+            </div>
+
+            <div style={{
+              fontSize: 12,
+              color: 'var(--fc-text-muted)',
+              marginTop: 4,
+            }}>
+              {totalTallos.toLocaleString('es-CO')} tallos · {totalLineas} {totalLineas === 1 ? 'línea' : 'líneas'}
+            </div>
+          </div>
+        </Col>
+        </Row>
 
         {/* Reemplazado en C4a — se dejan comentados por rollback */}
         {/*
@@ -555,69 +611,6 @@ const SalesOrderFormPage = () => {
           isReadOnly={isReadOnly}
           onLinesChanged={handleLineAdded}
         />
-
-        </Col>
-
-        <Col xs={0} md={8}>
-          <div style={{
-            position: 'sticky',
-            top: 24,
-          }}>
-            <div style={{
-              backgroundColor: 'var(--fc-surface-dark)',
-              color: 'var(--fc-text-on-dark)',
-              borderRadius: 12,
-              padding: 24,
-              marginBottom: 16,
-            }}>
-              <div style={{
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: 1.2,
-                color: 'var(--fc-text-muted)',
-                marginBottom: 16,
-              }}>Resumen</div>
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 12,
-                fontSize: 14,
-              }}>
-                <span>Subtotal</span>
-                <span>{formatCurrency(totalAmount)}</span>
-              </div>
-
-              <div style={{
-                height: 1,
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                margin: '16px 0',
-              }} />
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 8,
-              }}>
-                <span style={{ fontSize: 16, fontWeight: 600 }}>Total</span>
-                <span style={{ fontSize: 22, fontWeight: 700 }}>
-                  {formatCurrency(totalAmount)}
-                </span>
-              </div>
-
-              <div style={{
-                fontSize: 12,
-                color: 'var(--fc-text-muted)',
-                marginTop: 4,
-              }}>
-                {totalTallos.toLocaleString('es-CO')} tallos · {totalLineas} {totalLineas === 1 ? 'línea' : 'líneas'}
-              </div>
-            </div>
-          </div>
-        </Col>
-        </Row>
 
       </div>
 
