@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Typography, Space, theme } from 'antd';
+import React, { useMemo } from 'react';
+import { Layout, Menu, Avatar, Dropdown, Typography, Space } from 'antd';
 import {
   HomeOutlined,
   InboxOutlined,
@@ -7,25 +7,14 @@ import {
   ShoppingCartOutlined,
   TagOutlined,
   SettingOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   LogoutOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Content } = Layout;
 const { Text } = Typography;
-
-const COLORS = {
-  siderBg: '#1a3c2e',
-  hoverBg: '#2d6a4f',
-  activeBg: '#52b788',
-  activeText: '#ffffff',
-  menuText: '#c8e6c9',
-  logo: '#52b788',
-};
 
 function getUserFromToken() {
   try {
@@ -111,22 +100,10 @@ const menuItems = [
 ];
 
 const AppLayout = ({ children }) => {
-  const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const user = useMemo(() => getUserFromToken(), []);
-
-  // Determinar qué submenú abrir según la URL actual
-  const defaultOpenKeys = useMemo(() => {
-    const path = location.pathname;
-    if (path.startsWith('/inventory')) return ['inventario'];
-    if (path.startsWith('/farm')) return ['cultivo'];
-    if (path.startsWith('/sales')) return ['ventas'];
-    if (path.startsWith('/products')) return ['productos'];
-    if (path.startsWith('/settings')) return ['configuracion'];
-    return [];
-  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -181,237 +158,85 @@ const AppLayout = ({ children }) => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        width={230}
-        collapsedWidth={72}
+      <Header
         style={{
-          background: COLORS.siderBg,
-          position: 'fixed',
-          left: 0,
+          position: 'sticky',
           top: 0,
-          bottom: 0,
           zIndex: 100,
-          overflow: 'hidden',
-          boxShadow: '2px 0 12px rgba(0,0,0,0.18)',
-          transition: 'width 0.2s',
+          background: 'var(--fc-surface-dark)',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          height: 64,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
         }}
       >
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            paddingLeft: collapsed ? 0 : 20,
-            gap: 10,
-            borderBottom: `1px solid rgba(255,255,255,0.08)`,
-            cursor: 'default',
-            userSelect: 'none',
-          }}
-        >
-          <span
-            style={{
-              fontSize: collapsed ? 26 : 22,
-              lineHeight: 1,
-              filter: 'drop-shadow(0 0 6px #52b78888)',
-              transition: 'font-size 0.2s',
-            }}
-          >
-            🌿
-          </span>
-          {!collapsed && (
-            <Text
-              style={{
-                color: COLORS.logo,
-                fontWeight: 700,
-                fontSize: 18,
-                letterSpacing: 1,
-                fontFamily: "'Inter', sans-serif",
-                margin: 0,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              FloraCore
-            </Text>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 40 }}>
+          <span style={{ fontSize: 22 }}>🌿</span>
+          <Text style={{
+            color: 'var(--fc-accent)',
+            fontWeight: 700,
+            fontSize: 18,
+            letterSpacing: 0.5,
+            fontFamily: "'Inter', sans-serif",
+          }}>
+            FloraCore
+          </Text>
         </div>
 
         <Menu
-          mode="inline"
+          mode="horizontal"
+          theme="dark"
           selectedKeys={[location.pathname]}
-          defaultOpenKeys={collapsed ? [] : defaultOpenKeys}
           items={buildMenuItems(menuItems, user?.isAdmin)}
           onClick={handleMenuClick}
-          inlineIndent={16}
           style={{
+            flex: 1,
             background: 'transparent',
-            border: 'none',
-            marginTop: 8,
-            color: COLORS.menuText,
+            borderBottom: 'none',
+            minWidth: 0,
           }}
-          theme="dark"
         />
 
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            bottom: 0,
-            width: '100%',
-            padding: collapsed ? '10px 0' : '10px 16px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-          }}
-        >
-          {user ? (
-            <Dropdown
-              menu={{ items: userDropdownItems, onClick: handleUserMenuClick }}
-              placement="topRight"
-              arrow
-              trigger={['click']}
-            >
-              <Space
-                style={{ cursor: 'pointer', userSelect: 'none', minWidth: 0 }}
+        {user && (
+          <Dropdown
+            menu={{ items: userDropdownItems, onClick: handleUserMenuClick }}
+            placement="bottomRight"
+            trigger={['click']}
+          >
+            <Space style={{ cursor: 'pointer', color: 'var(--fc-text-on-dark)' }}>
+              <Avatar
+                size={28}
+                style={{
+                  background: 'var(--fc-accent)',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  color: '#fff',
+                }}
               >
-                <Avatar
-                  size={22}
-                  style={{
-                    background: `linear-gradient(135deg, ${COLORS.hoverBg}, ${COLORS.activeBg})`,
-                    fontWeight: 700,
-                    fontSize: 10,
-                    color: '#fff',
-                    flexShrink: 0,
-                  }}
-                >
-                  {user.initials}
-                </Avatar>
-                {!collapsed && (
-                  <Text
-                    style={{
-                      color: COLORS.menuText,
-                      fontSize: 12,
-                      maxWidth: 130,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {user.name}
-                  </Text>
-                )}
-              </Space>
-            </Dropdown>
-          ) : (
-            !collapsed && (
-              <Button
-                size="small"
-                type="text"
-                icon={<LogoutOutlined />}
-                onClick={handleLogout}
-                style={{ color: COLORS.menuText, paddingLeft: 0 }}
-              >
-                Salir
-              </Button>
-            )
-          )}
-        </div>
+                {user.initials}
+              </Avatar>
+              <Text style={{ color: 'var(--fc-text-on-dark)', fontSize: 13 }}>
+                {user.name}
+              </Text>
+            </Space>
+          </Dropdown>
+        )}
+      </Header>
 
-        <style>{`
-          .ant-menu-dark .ant-menu-item:hover,
-          .ant-menu-dark .ant-menu-submenu-title:hover {
-            background-color: ${COLORS.hoverBg} !important;
-          }
-          .ant-menu-dark .ant-menu-item-selected {
-            background-color: ${COLORS.activeBg} !important;
-            color: ${COLORS.activeText} !important;
-          }
-          .ant-menu-dark.ant-menu-dark:not(.ant-menu-horizontal)
-            .ant-menu-item-selected {
-            background-color: ${COLORS.activeBg} !important;
-          }
-          .ant-menu-dark .ant-menu-sub {
-            background: rgba(0,0,0,0.15) !important;
-          }
-          .ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title {
-            color: ${COLORS.activeBg} !important;
-          }
-          .ant-layout-sider-trigger {
-            display: none !important;
-          }
-        `}</style>
-      </Sider>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      `}</style>
 
-      <Layout
+      <Content
         style={{
-          marginLeft: collapsed ? 72 : 230,
-          transition: 'margin-left 0.2s',
+          background: 'var(--fc-page-bg)',
+          minHeight: 'calc(100vh - 64px)',
+          padding: '24px',
         }}
       >
-        <Header
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 99,
-            background: '#ffffff',
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-            height: 64,
-          }}
-        >
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{
-              fontSize: 18,
-              color: COLORS.siderBg,
-              width: 40,
-              height: 40,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 8,
-              transition: 'background 0.2s',
-            }}
-          />
-
-          <Text
-            style={{
-              color: COLORS.siderBg,
-              fontWeight: 700,
-              fontSize: 16,
-              letterSpacing: 0.5,
-              fontFamily: "'Inter', sans-serif",
-              flex: 1,
-              textAlign: 'center',
-              pointerEvents: 'none',
-            }}
-          >
-            {!collapsed ? '' : 'FloraCore ERP'}
-          </Text>
-        </Header>
-
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        `}</style>
-
-        <Content
-          style={{
-            background: '#f5f5f5',
-            minHeight: 'calc(100vh - 64px)',
-            padding: '24px',
-            overflowY: 'auto',
-          }}
-        >
-          {children}
-        </Content>
-      </Layout>
+        {children}
+      </Content>
     </Layout>
   );
 };

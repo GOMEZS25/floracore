@@ -65,7 +65,7 @@ const OrderLinesCard = ({
                 percent={percent}
                 size="small"
                 showInfo={false}
-                strokeColor={complete ? '#52c41a' : '#1a3c2e'}
+                strokeColor={complete ? '#52c41a' : 'var(--fc-accent)'}
                 style={{ width: 50 }}
               />
             </Space>
@@ -119,7 +119,7 @@ const OrderLinesCard = ({
                 <Button
                   size="small"
                   icon={<LinkOutlined />}
-                  style={{ borderColor: '#1a3c2e', color: '#1a3c2e' }}
+                  style={{ borderColor: 'var(--fc-accent)', color: 'var(--fc-accent)' }}
                   onClick={() => onAssign(r)}
                 />
               </Tooltip>
@@ -143,7 +143,7 @@ const OrderLinesCard = ({
     <Card
       title="Líneas de la Orden"
       variant="borderless"
-      style={{ borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+      style={{ borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
       styles={{ header: { border: 'none' }, body: { paddingTop: 8 } }}
     >
       <Table
@@ -173,7 +173,7 @@ const OrderLinesCard = ({
         <Col style={{ textAlign: 'right' }}>
           <Space direction="vertical" size={0}>
             <Text style={summaryLabelStyle}>Total</Text>
-            <Text strong style={{ fontSize: 20, color: '#1a3c2e' }}>
+            <Text strong style={{ fontSize: 20, color: 'var(--fc-accent)' }}>
               {getCurrencySymbol(clientCurrency)} {formatMoney(totalAmount)}
             </Text>
           </Space>
