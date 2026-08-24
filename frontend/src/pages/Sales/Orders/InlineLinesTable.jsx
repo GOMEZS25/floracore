@@ -91,6 +91,9 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     (Number(captureRow.cantidad_cajas) || 0) *
     (Number(captureRow.ramos_por_caja) || 0) *
     (Number(captureRow.tallos_por_ramo) || 0);
+  const totalRamosEstimado =
+    (Number(captureRow.cantidad_cajas) || 0) *
+    (Number(captureRow.ramos_por_caja) || 0);
 
   const getRowValue = (row, field) => {
     const detailId = row.detail_id || row.id;
@@ -422,23 +425,99 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       {subtotalEstimado > 0 && (
         <div style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          backgroundColor: 'var(--fc-accent-soft)',
-          border: '1px solid var(--fc-accent)',
-          borderRadius: 8,
-          padding: '10px 14px',
-          marginTop: 8,
-          fontSize: 13,
+          justifyContent: 'flex-end',
+          marginTop: 12,
         }}>
-          <span style={{ color: 'var(--fc-accent)', fontWeight: 600 }}>→</span>
-          <span style={{ color: 'var(--fc-text-primary)' }}>
-            <strong>{totalTallosEstimado.toLocaleString('es-CO')} tallos</strong>
-            &nbsp;·&nbsp;Subtotal estimado:{' '}
-            <strong>
-              {getCurrencySymbol(clientCurrency)} {formatMoney(subtotalEstimado)}
-            </strong>
-          </span>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 12,
+          width: '50%',
+        }}>
+          <div style={{
+            backgroundColor: 'var(--fc-surface)',
+            border: '1px solid var(--fc-border)',
+            borderRadius: 12,
+            padding: '12px 14px',
+          }}>
+            <div style={{
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              color: 'var(--fc-text-secondary)',
+              marginBottom: 4,
+            }}>Cajas de esta línea</div>
+            <div style={{
+              fontSize: 18,
+              fontWeight: 500,
+              color: 'var(--fc-text-primary)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>{(Number(captureRow.cantidad_cajas) || 0).toLocaleString('es-CO')}</div>
+          </div>
+
+          <div style={{
+            backgroundColor: 'var(--fc-surface)',
+            border: '1px solid var(--fc-border)',
+            borderRadius: 12,
+            padding: '12px 14px',
+          }}>
+            <div style={{
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              color: 'var(--fc-text-secondary)',
+              marginBottom: 4,
+            }}>Ramos de esta línea</div>
+            <div style={{
+              fontSize: 18,
+              fontWeight: 500,
+              color: 'var(--fc-text-primary)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>{totalRamosEstimado.toLocaleString('es-CO')}</div>
+          </div>
+
+          <div style={{
+            backgroundColor: 'var(--fc-surface)',
+            border: '1px solid var(--fc-border)',
+            borderRadius: 12,
+            padding: '12px 14px',
+          }}>
+            <div style={{
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              color: 'var(--fc-text-secondary)',
+              marginBottom: 4,
+            }}>Tallos de esta línea</div>
+            <div style={{
+              fontSize: 18,
+              fontWeight: 500,
+              color: 'var(--fc-text-primary)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>{totalTallosEstimado.toLocaleString('es-CO')}</div>
+          </div>
+
+          <div style={{
+            backgroundColor: 'var(--fc-accent-soft)',
+            border: '1px solid var(--fc-accent)',
+            borderRadius: 12,
+            padding: '12px 14px',
+          }}>
+            <div style={{
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              color: 'var(--fc-accent)',
+              marginBottom: 4,
+            }}>Subtotal de esta línea</div>
+            <div style={{
+              fontSize: 18,
+              fontWeight: 500,
+              color: 'var(--fc-accent)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>{getCurrencySymbol(clientCurrency)} {formatMoney(subtotalEstimado)}</div>
+          </div>
+        </div>
         </div>
       )}
 

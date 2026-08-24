@@ -232,12 +232,40 @@ const SalesOrderFormPage = () => {
     }
   };
 
-  const handleGuardar = () => {
-    if (!orderId) {
-      notification.info({ message: 'Completa los datos generales para guardar el borrador' });
-      return;
+  const handleGuardar = async () => {
+    try {
+      const values = await headerForm.validateFields();
+      if (!orderId) {
+        notification.info({
+          message: 'Los datos generales se guardarán automáticamente al completarlos',
+        });
+        return;
+      }
+      const payload = {
+        client_id: values.client_id,
+        client_address_id: values.client_address_id,
+        delivery_date: values.delivery_date.format('YYYY-MM-DD'),
+        transaction_category_id: values.transaction_category_id || null,
+        notes: values.notes,
+      };
+      setLoading(true);
+      await salesService.actualizarHeader(orderId, payload);
+      notification.success({ message: 'Orden guardada' });
+      fetchOrder(orderId);
+    } catch (error) {
+      if (error?.errorFields) {
+        notification.error({
+          message: 'Faltan campos obligatorios',
+          description: 'Revisa los campos marcados en rojo antes de guardar.',
+        });
+      } else {
+        notification.error({
+          message: 'Error al guardar',
+          description: error?.response?.data?.mensaje || 'Error desconocido',
+        });
+        setLoading(false);
+      }
     }
-    notification.success({ message: 'Orden guardada' });
   };
 
   const handleDispatchClick = () => {
