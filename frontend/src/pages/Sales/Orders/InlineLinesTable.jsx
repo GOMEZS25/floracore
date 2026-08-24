@@ -131,9 +131,10 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     const detailId = row.detail_id || row.id;
     const edits = rowEdits[detailId] || {};
     const payload = {
+      packaging_type: row.packaging_type || 'CAJA',
       quantity: edits.quantity !== undefined ? edits.quantity : row.quantity,
-      bunches_per_box: edits.bunches_per_box !== undefined ? edits.bunches_per_box : row.bunches_per_box,
-      stems_per_bunch: edits.stems_per_bunch !== undefined ? edits.stems_per_bunch : row.stems_per_bunch,
+      ramos_por_caja: edits.bunches_per_box !== undefined ? edits.bunches_per_box : row.bunches_per_box,
+      tallos_por_ramo: edits.stems_per_bunch !== undefined ? edits.stems_per_bunch : row.stems_per_bunch,
       unit_price: edits.unit_price !== undefined ? edits.unit_price : row.unit_price,
       billing_unit: edits.billing_unit !== undefined ? edits.billing_unit : row.billing_unit,
     };
