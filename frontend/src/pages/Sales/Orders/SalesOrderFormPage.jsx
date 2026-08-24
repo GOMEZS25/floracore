@@ -21,6 +21,7 @@ import EditLineModal from './EditLineModal';
 import AssignInventoryModal from './AssignInventoryModal';
 import AddProductsCard from './AddProductsCard';
 import OrderLinesCard from './OrderLinesCard';
+import InlineLinesTable from './InlineLinesTable';
 import { formatOrderNumber } from '../../../utils/orderNumber';
 import './SalesOrderForm.css';
 
@@ -519,29 +520,41 @@ const SalesOrderFormPage = () => {
         </Card>
 
 
-        {orderId && isDraft && (
-          <AddProductsCard
-            orderId={orderId}
-            allLots={allLots}
-            allProducts={allProducts}
-            clientCurrency={clientCurrency}
-            onLineAdded={handleLineAdded}
-          />
-        )}
+        {/* Reemplazado en C4a — se dejan comentados por rollback */}
+        {/*
+          {orderId && isDraft && (
+            <AddProductsCard
+              orderId={orderId}
+              allLots={allLots}
+              allProducts={allProducts}
+              clientCurrency={clientCurrency}
+              onLineAdded={handleLineAdded}
+            />
+          )}
 
-        {orderId && (
-          <OrderLinesCard
-            orderLines={orderLines}
-            isReadOnly={isReadOnly}
-            isDraft={isDraft}
-            isApproved={isApproved}
-            clientCurrency={clientCurrency}
-            onEdit={openEditLineModal}
-            onAssign={openAssignModal}
-            onDelete={handleDeleteLine}
-            onViewReservation={openReservationModal}
-          />
-        )}
+          {orderId && (
+            <OrderLinesCard
+              orderLines={orderLines}
+              isReadOnly={isReadOnly}
+              isDraft={isDraft}
+              isApproved={isApproved}
+              clientCurrency={clientCurrency}
+              onEdit={openEditLineModal}
+              onAssign={openAssignModal}
+              onDelete={handleDeleteLine}
+              onViewReservation={openReservationModal}
+            />
+          )}
+        */}
+
+        <InlineLinesTable
+          orderId={orderId}
+          orderLines={orderLines}
+          allProducts={allProducts}
+          clientCurrency={clientCurrency}
+          isReadOnly={isReadOnly}
+          onLinesChanged={handleLineAdded}
+        />
 
         </Col>
 
