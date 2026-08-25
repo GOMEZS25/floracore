@@ -470,6 +470,7 @@ const agregarLinea = async (req, res) => {
                     total_stems,
                     total_bunches,
                     total_boxes,
+                    billing_unit,
                     unit_price: price,
                     subtotal,
                     notes
@@ -611,6 +612,7 @@ const actualizarLinea = async (req, res) => {
                 total_stems,
                 total_bunches,
                 total_boxes,
+                billing_unit,
                 unit_price: price,
                 subtotal
             }

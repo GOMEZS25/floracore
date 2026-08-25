@@ -466,6 +466,7 @@ model SalesOrderDetail {
   total_stems     Int
   total_bunches   Int?
   total_boxes     Int?
+  billing_unit    String        @default("CAJA")
   unit_price      Decimal       @db.Decimal(10, 2)
   subtotal        Decimal       @db.Decimal(10, 2)
   notes           String?       @db.VarChar(300)
