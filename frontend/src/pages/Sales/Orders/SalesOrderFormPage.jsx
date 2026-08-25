@@ -64,6 +64,7 @@ const SalesOrderFormPage = () => {
 
   const autoSaved = useRef(!!id);
   const headerUpdateTimer = useRef(null);
+  const previousClientIdRef = useRef(null);
 
   useEffect(() => {
     fetchInitialData();
@@ -113,6 +114,7 @@ const SalesOrderFormPage = () => {
         transaction_category_id: data.transaction_category_id,
         notes: data.notes,
       });
+      previousClientIdRef.current = data.client_id;
 
       const clientRes = await clientService.getClientById(data.client_id);
       const clientInfo = clientRes?.data?.data || clientRes?.data || clientRes;
@@ -151,6 +153,52 @@ const SalesOrderFormPage = () => {
     } catch (error) {
       notification.error({ message: 'Error', description: 'Error al cargar direcciones.' });
     }
+  };
+
+  const handleClientChangeWithConfirm = (newClientId) => {
+    const currentClientId = previousClientIdRef.current;
+
+    if (!currentClientId || !newClientId) {
+      previousClientIdRef.current = newClientId;
+      handleClientChange(newClientId);
+      return;
+    }
+
+    if (String(currentClientId) === String(newClientId)) {
+      return;
+    }
+
+    const currentClient = clients.find(c => String(c.client_id) === String(currentClientId));
+    const newClient = clients.find(c => String(c.client_id) === String(newClientId));
+    const currentName = currentClient?.name || 'el cliente actual';
+    const newName = newClient?.name || 'el nuevo cliente';
+
+    Modal.confirm({
+      title: 'Cambiar cliente de la orden',
+      icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+      content: (
+        <div>
+          <p>Confirmar cambio:</p>
+          <p style={{ margin: '12px 0' }}>
+            <strong>De:</strong> {currentName}<br />
+            <strong>A:</strong> {newName}
+          </p>
+          <p style={{ color: 'var(--fc-text-secondary)', fontSize: 13 }}>
+            Se limpiará la dirección de entrega y podría afectar precios
+            y disponibilidad. ¿Confirmas el cambio?
+          </p>
+        </div>
+      ),
+      okText: 'Sí, cambiar cliente',
+      cancelText: 'Cancelar',
+      onOk: () => {
+        previousClientIdRef.current = newClientId;
+        handleClientChange(newClientId);
+      },
+      onCancel: () => {
+        headerForm.setFieldsValue({ client_id: currentClientId });
+      },
+    });
   };
 
   const isReadOnly = orderData?.status === 'CANCELADA';
@@ -447,164 +495,164 @@ const SalesOrderFormPage = () => {
         </div>
 
         <Row gutter={24} style={{ marginBottom: 0 }}>
-        <Col xs={24} md={16}>
+          <Col xs={24} md={16}>
 
-        <Card
-          title={
-            <span style={{
-              fontSize: 16,
-              fontWeight: 600,
-              color: 'var(--fc-text-primary)',
-            }}>
-              Detalles de la orden
-            </span>
-          }
-          variant="borderless"
-          style={{
-            marginBottom: 24,
-            borderRadius: 12,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-            border: '1px solid var(--fc-border)',
-            backgroundColor: 'var(--fc-surface)',
-          }}
-          styles={{
-            header: {
-              border: 'none',
-              paddingTop: 20,
-              paddingBottom: 4,
-            },
-            body: {
-              paddingTop: 12,
-            },
-          }}
-        >
-          <Form form={headerForm} layout="vertical" disabled={isReadOnly}>
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item name="client_id" label={<span style={{
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  color: 'var(--fc-text-secondary)',
-                  fontWeight: 500,
-                }}>Cliente</span>} rules={[{ required: true }]}>
-                  <Select showSearch placeholder="Buscar cliente" onChange={handleClientChange} filterOption={(i, o) => o.children.toLowerCase().includes(i.toLowerCase())}>
-                    {clients.map(c => <Option key={c.client_id} value={c.client_id}>{c.name}</Option>)}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item name="client_address_id" label={<span style={{
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  color: 'var(--fc-text-secondary)',
-                  fontWeight: 500,
-                }}>Dirección de Entrega</span>} rules={[{ required: true }]}>
-                  <Select placeholder="Seleccionar Dirección">
-                    {clientAddresses.map(a => <Option key={a.address_id} value={a.address_id}>{a.address_line} ({a.city})</Option>)}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={8}>
-                <Form.Item name="delivery_date" label={<span style={{
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  color: 'var(--fc-text-secondary)',
-                  fontWeight: 500,
-                }}>Fecha de Entrega</span>} rules={[{ required: true }]}>
-                  <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Row gutter={16}>
-              <Col xs={24} md={8}>
-                <Form.Item name="transaction_category_id" label={<span style={{
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  color: 'var(--fc-text-secondary)',
-                  fontWeight: 500,
-                }}>Categoría (Opcional)</span>}>
-                  <Select placeholder="Seleccionar" allowClear>
-                    {categories.map(cat => <Option key={cat.id || cat.category_id} value={cat.id || cat.category_id}>{cat.name}</Option>)}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={16}>
-                <Form.Item name="notes" label={<span style={{
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  color: 'var(--fc-text-secondary)',
-                  fontWeight: 500,
-                }}>Notas</span>}>
-                  <TextArea rows={1} placeholder="Opcional..." />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Form>
-        </Card>
+            <Card
+              title={
+                <span style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: 'var(--fc-text-primary)',
+                }}>
+                  Detalles de la orden
+                </span>
+              }
+              variant="borderless"
+              style={{
+                marginBottom: 24,
+                borderRadius: 12,
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                border: '1px solid var(--fc-border)',
+                backgroundColor: 'var(--fc-surface)',
+              }}
+              styles={{
+                header: {
+                  border: 'none',
+                  paddingTop: 20,
+                  paddingBottom: 4,
+                },
+                body: {
+                  paddingTop: 12,
+                },
+              }}
+            >
+              <Form form={headerForm} layout="vertical" disabled={isReadOnly}>
+                <Row gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Form.Item name="client_id" label={<span style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                      color: 'var(--fc-text-secondary)',
+                      fontWeight: 500,
+                    }}>Cliente</span>} rules={[{ required: true }]}>
+                      <Select showSearch placeholder="Buscar cliente" onChange={handleClientChangeWithConfirm} filterOption={(i, o) => o.children.toLowerCase().includes(i.toLowerCase())}>
+                        {clients.map(c => <Option key={c.client_id} value={c.client_id}>{c.name}</Option>)}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item name="client_address_id" label={<span style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                      color: 'var(--fc-text-secondary)',
+                      fontWeight: 500,
+                    }}>Dirección de Entrega</span>} rules={[{ required: true }]}>
+                      <Select placeholder="Seleccionar Dirección">
+                        {clientAddresses.map(a => <Option key={a.address_id} value={a.address_id}>{a.address_line} ({a.city})</Option>)}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item name="delivery_date" label={<span style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                      color: 'var(--fc-text-secondary)',
+                      fontWeight: 500,
+                    }}>Fecha de Entrega</span>} rules={[{ required: true }]}>
+                      <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col xs={24} md={8}>
+                    <Form.Item name="transaction_category_id" label={<span style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                      color: 'var(--fc-text-secondary)',
+                      fontWeight: 500,
+                    }}>Categoría (Opcional)</span>}>
+                      <Select placeholder="Seleccionar" allowClear>
+                        {categories.map(cat => <Option key={cat.id || cat.category_id} value={cat.id || cat.category_id}>{cat.name}</Option>)}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={16}>
+                    <Form.Item name="notes" label={<span style={{
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.8,
+                      color: 'var(--fc-text-secondary)',
+                      fontWeight: 500,
+                    }}>Notas</span>}>
+                      <TextArea rows={1} placeholder="Opcional..." />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Form>
+            </Card>
 
-        </Col>
+          </Col>
 
-        <Col xs={0} md={8}>
-          <div style={{
-            backgroundColor: 'var(--fc-surface-dark)',
-            color: 'var(--fc-text-on-dark)',
-            borderRadius: 12,
-            padding: 24,
-          }}>
+          <Col xs={0} md={8}>
             <div style={{
-              fontSize: 11,
-              textTransform: 'uppercase',
-              letterSpacing: 1.2,
-              color: 'var(--fc-text-muted)',
-              marginBottom: 16,
-            }}>Resumen</div>
-
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-              fontSize: 14,
+              backgroundColor: 'var(--fc-surface-dark)',
+              color: 'var(--fc-text-on-dark)',
+              borderRadius: 12,
+              padding: 24,
             }}>
-              <span>Subtotal</span>
-              <span>{formatCurrency(totalAmount)}</span>
+              <div style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: 1.2,
+                color: 'var(--fc-text-muted)',
+                marginBottom: 16,
+              }}>Resumen</div>
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+                fontSize: 14,
+              }}>
+                <span>Subtotal</span>
+                <span>{formatCurrency(totalAmount)}</span>
+              </div>
+
+              <div style={{
+                height: 1,
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                margin: '16px 0',
+              }} />
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}>
+                <span style={{ fontSize: 16, fontWeight: 600 }}>Total</span>
+                <span style={{ fontSize: 22, fontWeight: 700 }}>
+                  {formatCurrency(totalAmount)}
+                </span>
+              </div>
+
+              <div style={{
+                fontSize: 12,
+                color: 'var(--fc-text-muted)',
+                marginTop: 4,
+              }}>
+                {totalTallos.toLocaleString('es-CO')} tallos · {totalLineas} {totalLineas === 1 ? 'línea' : 'líneas'}
+              </div>
             </div>
-
-            <div style={{
-              height: 1,
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              margin: '16px 0',
-            }} />
-
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 8,
-            }}>
-              <span style={{ fontSize: 16, fontWeight: 600 }}>Total</span>
-              <span style={{ fontSize: 22, fontWeight: 700 }}>
-                {formatCurrency(totalAmount)}
-              </span>
-            </div>
-
-            <div style={{
-              fontSize: 12,
-              color: 'var(--fc-text-muted)',
-              marginTop: 4,
-            }}>
-              {totalTallos.toLocaleString('es-CO')} tallos · {totalLineas} {totalLineas === 1 ? 'línea' : 'líneas'}
-            </div>
-          </div>
-        </Col>
+          </Col>
         </Row>
 
-        {/* Reemplazado en C4a — se dejan comentados por rollback */}
+        {/* se dejan comentados por rollback */}
         {/*
           {orderId && isDraft && (
             <AddProductsCard
