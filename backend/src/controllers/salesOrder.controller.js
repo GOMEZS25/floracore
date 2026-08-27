@@ -41,7 +41,7 @@ const crearOrden = async (req, res) => {
                     client_id: BigInt(client_id),
                     client_address_id: BigInt(client_address_id),
                     transaction_category_id: transaction_category_id ? Number(transaction_category_id) : null,
-                    delivery_date: new Date(delivery_date + 'T00:00:00'),
+                    delivery_date: new Date(delivery_date + 'T00:00:00.000Z'),
                     notes,
                     document_url,
                     created_by: BigInt(req.usuario.id),
@@ -80,8 +80,8 @@ const listarOrdenes = async (req, res) => {
 
         if (delivery_date_start || delivery_date_end) {
             where.delivery_date = {};
-            if (delivery_date_start) where.delivery_date.gte = new Date(delivery_date_start + 'T00:00:00');
-            if (delivery_date_end) where.delivery_date.lte = new Date(delivery_date_end + 'T23:59:59');
+            if (delivery_date_start) where.delivery_date.gte = new Date(delivery_date_start + 'T00:00:00.000Z');
+            if (delivery_date_end) where.delivery_date.lte = new Date(delivery_date_end + 'T23:59:59.000Z');
         }
 
         const pageNum = parseInt(page) || 1;
@@ -367,7 +367,7 @@ const autoGuardarOrden = async (req, res) => {
                     client_id: BigInt(client_id),
                     client_address_id: BigInt(client_address_id),
                     transaction_category_id: transaction_category_id ? Number(transaction_category_id) : null,
-                    delivery_date: new Date(delivery_date + 'T00:00:00'),
+                    delivery_date: new Date(delivery_date + 'T00:00:00.000Z'),
                     notes,
                     document_url,
                     created_by: BigInt(req.usuario.id),
@@ -872,7 +872,7 @@ const updateOrderHeader = async (req, res) => {
             data: {
                 client_id: client_id ? BigInt(client_id) : orden.client_id,
                 client_address_id: client_address_id ? BigInt(client_address_id) : orden.client_address_id,
-                delivery_date: delivery_date ? new Date(delivery_date + 'T00:00:00') : orden.delivery_date,
+                delivery_date: delivery_date ? new Date(delivery_date + 'T00:00:00.000Z') : orden.delivery_date,
                 transaction_category_id: transaction_category_id !== undefined ? (transaction_category_id ? BigInt(transaction_category_id) : null) : orden.transaction_category_id,
                 notes: notes !== undefined ? notes : orden.notes
             }
