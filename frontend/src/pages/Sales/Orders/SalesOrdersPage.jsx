@@ -254,9 +254,9 @@ const SalesOrdersPage = () => {
           </Tooltip>
 
           {record.status === 'BORRADOR' && (
-            <Tooltip title="Aprobar Orden">
+            <Tooltip title="Confirmar orden">
               <Popconfirm
-                title="¿Aprobar esta orden?"
+                title="¿Confirmar orden?"
                 onConfirm={() => handleApprove(record.order_id)}
                 okText="Sí"
                 cancelText="No"

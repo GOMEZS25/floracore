@@ -17,10 +17,7 @@ import clientService from '../../../services/clientService';
 import lotService from '../../../services/lotService';
 import * as productService from '../../../services/productService';
 import ReservationModal from './ReservationModal';
-import EditLineModal from './EditLineModal';
 import AssignInventoryModal from './AssignInventoryModal';
-import AddProductsCard from './AddProductsCard';
-import OrderLinesCard from './OrderLinesCard';
 import InlineLinesTable from './InlineLinesTable';
 import { formatOrderNumber } from '../../../utils/orderNumber';
 import './SalesOrderForm.css';
@@ -49,9 +46,6 @@ const SalesOrderFormPage = () => {
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assigningDetail, setAssigningDetail] = useState(null);
-
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingDetail, setEditingDetail] = useState(null);
 
   const [reservationDetailId, setReservationDetailId] = useState(null);
 
@@ -184,7 +178,7 @@ const SalesOrderFormPage = () => {
             <strong>A:</strong> {newName}
           </p>
           <p style={{ color: 'var(--fc-text-secondary)', fontSize: 13 }}>
-            Se limpiará la dirección de entrega y podría afectar precios
+            Se actualizará la dirección de entrega y podría afectar precios
             y disponibilidad. ¿Confirmas el cambio?
           </p>
         </div>
@@ -246,19 +240,6 @@ const SalesOrderFormPage = () => {
   const handleLineAdded = () => {
     fetchOrder(orderId);
     refreshAvailableLots();
-  };
-
-  const handleDeleteLine = async (detailId) => {
-    setLoading(true);
-    try {
-      await salesService.eliminarLinea(detailId);
-      notification.success({ message: 'Línea eliminada.' });
-      fetchOrder(orderId);
-      refreshAvailableLots();
-    } catch (error) {
-      notification.error({ message: 'Error al eliminar', description: error.response?.data?.mensaje || 'No se pudo eliminar la línea.' });
-      setLoading(false);
-    }
   };
 
   const STATUS_CHANGE_SUCCESS = {
@@ -344,45 +325,9 @@ const SalesOrderFormPage = () => {
     });
   };
 
-  const openAssignModal = (detail) => {
-    setAssigningDetail(detail);
-    setAssignModalOpen(true);
-  };
-
   const closeAssignModal = () => {
     setAssignModalOpen(false);
     setAssigningDetail(null);
-  };
-
-  const openEditLineModal = (detail) => {
-    setEditingDetail(detail);
-    setEditModalOpen(true);
-  };
-
-  const handleEditLineSubmit = async (values) => {
-    const pt = values.packaging_type;
-    const quantity = pt === 'TALLO' ? values.quantity : pt === 'RAMO' ? values.cantidad_ramos : values.cantidad_cajas;
-
-    const payload = {
-      packaging_type: pt,
-      quantity,
-      tallos_por_ramo: pt !== 'TALLO' ? values.tallos_por_ramo : undefined,
-      ramos_por_caja: pt === 'CAJA' ? values.ramos_por_caja : undefined,
-      unit_price: values.unit_price,
-      billing_unit: values.billing_unit,
-    };
-
-    setLoading(true);
-    try {
-      await salesService.actualizarLinea(editingDetail.detail_id, payload);
-      notification.success({ message: 'Línea actualizada.' });
-      setEditModalOpen(false);
-      fetchOrder(orderId);
-    } catch (error) {
-      notification.error({ message: 'Error', description: error.response?.data?.mensaje || 'Error al actualizar línea.' });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleAssignSubmit = async (validRows) => {
@@ -420,12 +365,10 @@ const SalesOrderFormPage = () => {
   }).format(Number(n) || 0);
   const status = orderData?.status;
   const isDraft = status === 'BORRADOR';
-  const isApproved = status === 'APROBADA';
 
   const reservationDetail = reservationDetailId
     ? orderLines.find(r => (r.detail_id || r.id) === reservationDetailId) || null
     : null;
-  const openReservationModal = (detail) => setReservationDetailId(detail.detail_id || detail.id);
   const closeReservationModal = () => setReservationDetailId(null);
 
   return (
@@ -652,33 +595,6 @@ const SalesOrderFormPage = () => {
           </Col>
         </Row>
 
-        {/* se dejan comentados por rollback */}
-        {/*
-          {orderId && isDraft && (
-            <AddProductsCard
-              orderId={orderId}
-              allLots={allLots}
-              allProducts={allProducts}
-              clientCurrency={clientCurrency}
-              onLineAdded={handleLineAdded}
-            />
-          )}
-
-          {orderId && (
-            <OrderLinesCard
-              orderLines={orderLines}
-              isReadOnly={isReadOnly}
-              isDraft={isDraft}
-              isApproved={isApproved}
-              clientCurrency={clientCurrency}
-              onEdit={openEditLineModal}
-              onAssign={openAssignModal}
-              onDelete={handleDeleteLine}
-              onViewReservation={openReservationModal}
-            />
-          )}
-        */}
-
         <InlineLinesTable
           orderId={orderId}
           orderLines={orderLines}
@@ -697,14 +613,6 @@ const SalesOrderFormPage = () => {
         onClose={closeAssignModal}
         onSubmit={handleAssignSubmit}
         onRelease={handleReleaseAssignment}
-      />
-
-      <EditLineModal
-        open={editModalOpen}
-        detail={editingDetail}
-        onClose={() => setEditModalOpen(false)}
-        onSubmit={handleEditLineSubmit}
-        clientCurrency={clientCurrency}
       />
 
       <ReservationModal
