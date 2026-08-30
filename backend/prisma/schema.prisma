@@ -350,6 +350,7 @@ enum ProjectionStatus {
 enum SalesOrderStatus {
   BORRADOR
   APROBADA
+  CONFIRMADA
   DESPACHADA
   CANCELADA
 }
@@ -470,6 +471,8 @@ model SalesOrderDetail {
   unit_price      Decimal       @db.Decimal(10, 2)
   subtotal        Decimal       @db.Decimal(10, 2)
   notes           String?       @db.VarChar(300)
+  upc             String?       @db.VarChar(14)
+  mark_code       String?       @db.VarChar(40)
   created_at      DateTime      @default(now())
 
   order   SalesOrder @relation(fields: [order_id], references: [order_id], onDelete: Restrict)

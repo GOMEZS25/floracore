@@ -22,7 +22,7 @@ const { Text, Title } = Typography;
 
 const STATUS_TAG_COLOR = {
   BORRADOR: 'default',
-  APROBADA: 'processing',
+  CONFIRMADA: 'processing',
   DESPACHADA: 'success',
   CANCELADA: 'error',
 };
@@ -126,13 +126,13 @@ const SalesOrdersPage = () => {
 
   const handleApprove = async (id) => {
     try {
-      await salesService.cambiarEstadoOrden(id, 'APROBADA');
-      notification.success({ message: 'Orden aprobada con éxito' });
+      await salesService.cambiarEstadoOrden(id, 'CONFIRMADA');
+      notification.success({ message: 'Orden confirmada con éxito' });
       fetchOrders();
     } catch (error) {
       notification.error({
-        message: 'Error al aprobar',
-        description: error.response?.data?.mensaje || 'No se pudo aprobar la orden.'
+        message: 'Error al confirmar',
+        description: error.response?.data?.mensaje || 'No se pudo confirmar la orden.'
       });
     }
   };
@@ -266,7 +266,7 @@ const SalesOrdersPage = () => {
             </Tooltip>
           )}
 
-          {record.status === 'APROBADA' && (
+          {record.status === 'CONFIRMADA' && (
             <Tooltip title="Despachar Orden">
               <Popconfirm
                 title="¿Despachar esta orden? Se moverá el inventario permanentemente."
@@ -279,7 +279,7 @@ const SalesOrdersPage = () => {
             </Tooltip>
           )}
 
-          {(record.status === 'BORRADOR' || record.status === 'APROBADA') && (
+          {(record.status === 'BORRADOR' || record.status === 'CONFIRMADA') && (
             <Tooltip title="Cancelar Orden">
               <Popconfirm
                 title="¿Cancelar esta orden? Esta acción no se puede deshacer."
@@ -345,7 +345,7 @@ const SalesOrdersPage = () => {
               onChange={(val) => handleFilterChange('status', val)}
             >
               <Option value="BORRADOR">BORRADOR</Option>
-              <Option value="APROBADA">APROBADA</Option>
+              <Option value="CONFIRMADA">CONFIRMADA</Option>
               <Option value="DESPACHADA">DESPACHADA</Option>
               <Option value="CANCELADA">CANCELADA</Option>
             </Select>

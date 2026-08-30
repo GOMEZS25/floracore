@@ -877,7 +877,7 @@ const ProductsPage = () => {
         title={
           <Space>
             <span style={{ color: PRIMARY, fontWeight: 700, fontSize: 16 }}>
-              {wizardMode === 'create' ? '✦ Nuevo Producto' : '✎ Editar Producto'}
+              {wizardMode === 'create' ? 'Nuevo Producto' : '✎ Editar Producto'}
             </span>
           </Space>
         }
