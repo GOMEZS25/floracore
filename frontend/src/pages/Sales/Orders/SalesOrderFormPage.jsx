@@ -28,7 +28,7 @@ const { TextArea } = Input;
 
 const STATUS_BADGE = {
   BORRADOR: { bg: 'var(--fc-badge-draft-bg)', text: 'var(--fc-badge-draft-text)', label: 'BORRADOR' },
-  APROBADA: { bg: 'var(--fc-badge-approved-bg)', text: 'var(--fc-badge-approved-text)', label: 'APROBADA' },
+  CONFIRMADA: { bg: 'var(--fc-badge-approved-bg)', text: 'var(--fc-badge-approved-text)', label: 'CONFIRMADA' },
   DESPACHADA: { bg: 'var(--fc-badge-dispatched-bg)', text: 'var(--fc-badge-dispatched-text)', label: 'DESPACHADA' },
   CANCELADA: { bg: 'var(--fc-badge-canceled-bg)', text: 'var(--fc-badge-canceled-text)', label: 'CANCELADA' },
 };
@@ -243,7 +243,7 @@ const SalesOrderFormPage = () => {
   };
 
   const STATUS_CHANGE_SUCCESS = {
-    APROBADA: 'Orden aprobada con éxito',
+    CONFIRMADA: 'Orden confirmada con éxito',
     DESPACHADA: 'Orden despachada con éxito',
     CANCELADA: 'Orden cancelada',
     BORRADOR: 'Orden devuelta a borrador',
@@ -429,7 +429,7 @@ const SalesOrderFormPage = () => {
                   <Button
                     type="primary"
                     icon={<CheckCircleOutlined />}
-                    onClick={() => handleChangeStatus('APROBADA')}
+                    onClick={() => handleChangeStatus('CONFIRMADA')}
                   >Confirmar orden</Button>
                 )}
               </Space>

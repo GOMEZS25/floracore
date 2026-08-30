@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { serializeBigInt } = require('../utils/bigint.helper');
+const { validateUpc } = require('../utils/gtin');
 
 // Obtener siguiente número de orden
 const getNextOrderNumber = async (req, res) => {
@@ -196,8 +197,8 @@ const obtenerOrden = async (req, res) => {
 // Transiciones de estado válidas para órdenes de venta.
 // Única fuente de verdad: cualquier transición no listada aquí se rechaza con 400.
 const ALLOWED_ORDER_TRANSITIONS = {
-    BORRADOR: ['APROBADA', 'CANCELADA'],
-    APROBADA: ['BORRADOR', 'DESPACHADA', 'CANCELADA'],
+    BORRADOR: ['CONFIRMADA', 'CANCELADA'],
+    CONFIRMADA: ['BORRADOR', 'DESPACHADA', 'CANCELADA'],
     DESPACHADA: ['CANCELADA'],
     CANCELADA: []
 };
@@ -230,7 +231,7 @@ const cambiarEstadoOrden = async (req, res) => {
             });
         }
 
-        if (nuevoEstado === 'APROBADA' && (!orden.details || orden.details.length === 0)) {
+        if (nuevoEstado === 'CONFIRMADA' && (!orden.details || orden.details.length === 0)) {
             return res.status(400).json({ mensaje: 'La orden no tiene líneas asociadas' });
         }
 
@@ -242,8 +243,8 @@ const cambiarEstadoOrden = async (req, res) => {
                 data: { status: nuevoEstado }
             });
 
-            // APROBADA -> DESPACHADA: descuenta reservada (disponible ya se descontó al asignar)
-            if (estadoActual === 'APROBADA' && nuevoEstado === 'DESPACHADA') {
+            // CONFIRMADA -> DESPACHADA: descuenta reservada (disponible ya se descontó al asignar)
+            if (estadoActual === 'CONFIRMADA' && nuevoEstado === 'DESPACHADA') {
                 for (const detail of orden.details) {
                     for (const asgn of detail.assignments) {
                         await tx.lote.update({
@@ -264,8 +265,8 @@ const cambiarEstadoOrden = async (req, res) => {
                 }
             }
 
-            // BORRADOR|APROBADA -> CANCELADA: la reserva seguía activa, se libera por completo
-            if ((estadoActual === 'BORRADOR' || estadoActual === 'APROBADA') && nuevoEstado === 'CANCELADA') {
+            // BORRADOR|CONFIRMADA -> CANCELADA: la reserva seguía activa, se libera por completo
+            if ((estadoActual === 'BORRADOR' || estadoActual === 'CONFIRMADA') && nuevoEstado === 'CANCELADA') {
                 for (const detail of orden.details) {
                     for (const asgn of detail.assignments) {
                         await tx.lote.update({
@@ -313,7 +314,7 @@ const cambiarEstadoOrden = async (req, res) => {
                 }
             }
 
-            // APROBADA -> BORRADOR: solo cambia el status, no afecta inventario ni assignments
+            // CONFIRMADA -> BORRADOR: solo cambia el status, no afecta inventario ni assignments
         });
 
         return res.status(200).json({
@@ -403,11 +404,18 @@ const agregarLinea = async (req, res) => {
             ramos_por_caja,
             unit_price,
             billing_unit,
-            notes
+            notes,
+            upc,
+            mark_code
         } = req.body;
 
         if (!product_id || !packaging_type || !quantity || unit_price === undefined || !billing_unit) {
             return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
+        }
+
+        const upcResult = validateUpc(upc);
+        if (upcResult.error) {
+            return res.status(400).json({ mensaje: upcResult.error });
         }
 
         let total_stems = 0;
@@ -473,7 +481,9 @@ const agregarLinea = async (req, res) => {
                     billing_unit,
                     unit_price: price,
                     subtotal,
-                    notes
+                    notes,
+                    upc: upcResult.value,
+                    mark_code
                 }
             });
 
@@ -547,10 +557,21 @@ const actualizarLinea = async (req, res) => {
             ramos_por_caja,
             unit_price,
             billing_unit,
+            upc,
+            mark_code
         } = req.body;
 
         if (!packaging_type || !quantity || unit_price === undefined || !billing_unit) {
             return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
+        }
+
+        let upcValue;
+        if (upc !== undefined) {
+            const upcResult = validateUpc(upc);
+            if (upcResult.error) {
+                return res.status(400).json({ mensaje: upcResult.error });
+            }
+            upcValue = upcResult.value;
         }
 
         const detalle = await prisma.salesOrderDetail.findUnique({
@@ -562,8 +583,8 @@ const actualizarLinea = async (req, res) => {
             return res.status(404).json({ mensaje: 'Línea no encontrada' });
         }
 
-        if (!['BORRADOR', 'APROBADA'].includes(detalle.order.status)) {
-            return res.status(400).json({ mensaje: 'Solo se pueden editar líneas de órdenes en Borrador o Aprobadas' });
+        if (!['BORRADOR', 'CONFIRMADA'].includes(detalle.order.status)) {
+            return res.status(400).json({ mensaje: 'Solo se pueden editar líneas de órdenes en Borrador o Confirmadas' });
         }
 
         if (detalle.assignments.length > 0) {
@@ -602,20 +623,27 @@ const actualizarLinea = async (req, res) => {
         const stems_per_bunch = tpr || null;
         const bunches_per_box = rpc || null;
 
+        const data = {
+            packaging_type,
+            quantity: qty,
+            stems_per_bunch,
+            bunches_per_box,
+            total_stems,
+            total_bunches,
+            total_boxes,
+            billing_unit,
+            unit_price: price,
+            subtotal
+        };
+
+        // Only touch these optional columns when the client sends them, so an
+        // update that omits them leaves the stored value untouched.
+        if (upc !== undefined) data.upc = upcValue;
+        if (mark_code !== undefined) data.mark_code = mark_code;
+
         const actualizado = await prisma.salesOrderDetail.update({
             where: { detail_id: BigInt(detail_id) },
-            data: {
-                packaging_type,
-                quantity: qty,
-                stems_per_bunch,
-                bunches_per_box,
-                total_stems,
-                total_bunches,
-                total_boxes,
-                billing_unit,
-                unit_price: price,
-                subtotal
-            }
+            data
         });
 
         return res.status(200).json({

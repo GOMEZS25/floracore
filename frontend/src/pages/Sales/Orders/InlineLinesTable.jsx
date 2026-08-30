@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Table, Select, InputNumber, Button, Tag, Popconfirm, Tooltip, Typography, notification, Space } from 'antd';
+import { Card, Table, Select, Input, InputNumber, Button, Tag, Popconfirm, Tooltip, Typography, notification, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined, UndoOutlined } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
 import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
@@ -14,6 +14,8 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     tallos_por_ramo: null,
     unit_price: null,
     billing_unit: 'TALLO',
+    upc: '',
+    mark_code: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,6 +42,8 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       ramos_por_caja,
       unit_price,
       billing_unit: captureRow.billing_unit,
+      upc: captureRow.upc || null,
+      mark_code: captureRow.mark_code || null,
     };
 
     setSubmitting(true);
@@ -53,6 +57,8 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         tallos_por_ramo: null,
         unit_price: null,
         billing_unit: 'TALLO',
+        upc: '',
+        mark_code: '',
       });
       onLinesChanged();
     } catch (error) {
@@ -348,7 +354,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       }}
     >
       {!isReadOnly && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1.2fr 1fr auto', gap: 12, alignItems: 'end', padding: '12px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1.2fr 1fr 1fr 1.2fr auto', gap: 12, alignItems: 'end', padding: '12px 0' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={labelStyle}>PRODUCTO</span>
             <Select
@@ -407,6 +413,26 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
                 { value: 'RAMO', label: 'RAMO' },
                 { value: 'CAJA', label: 'CAJA' },
               ]}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={labelStyle}>UPC</span>
+            <Input
+              maxLength={13}
+              value={captureRow.upc}
+              onChange={(e) => setCaptureRow(prev => ({ ...prev, upc: e.target.value.replace(/\D/g, '') }))}
+              disabled={isReadOnly || !orderId}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={labelStyle}>Código de marca</span>
+            <Input
+              maxLength={40}
+              value={captureRow.mark_code}
+              onChange={(e) => setCaptureRow(prev => ({ ...prev, mark_code: e.target.value }))}
+              disabled={isReadOnly || !orderId}
             />
           </div>
 
