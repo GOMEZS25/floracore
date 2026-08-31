@@ -19,6 +19,7 @@ import * as productService from '../../../services/productService';
 import ReservationModal from './ReservationModal';
 import AssignInventoryModal from './AssignInventoryModal';
 import InlineLinesTable from './InlineLinesTable';
+import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
 import { formatOrderNumber } from '../../../utils/orderNumber';
 import './SalesOrderForm.css';
 
@@ -357,12 +358,15 @@ const SalesOrderFormPage = () => {
   };
 
   const orderLines = orderData?.details || [];
-  const totalAmount = orderLines.reduce((acc, l) => acc + (Number(l.subtotal) || 0), 0);
+  // Line subtotals already come rounded to 2 decimals from the DB (Prisma Decimal(10,2),
+  // serialized as string). Sum the rounded subtotals, then round only the final result
+  // to clear floating-point drift (e.g. 93.60000000000001 -> 93.60).
+  const totalAmount = Math.round(
+    orderLines.reduce((acc, l) => acc + (Number(l.subtotal) || 0), 0) * 100
+  ) / 100;
   const totalTallos = orderLines.reduce((acc, l) => acc + (Number(l.total_stems) || 0), 0);
   const totalLineas = orderLines.length;
-  const formatCurrency = (n) => new Intl.NumberFormat('es-CO', {
-    style: 'currency', currency: clientCurrency || 'COP', maximumFractionDigits: 0,
-  }).format(Number(n) || 0);
+  const formatCurrency = (n) => `${getCurrencySymbol(clientCurrency)} ${formatMoney(n)}`;
   const status = orderData?.status;
   const isDraft = status === 'BORRADOR';
 
