@@ -18,7 +18,7 @@ const getNextOrderNumber = async (req, res) => {
     }
 };
 
-// Crear Orden de Venta (legacy - sin detalles, solo cabecera)
+// Crear Orden de Venta (Header)
 const crearOrden = async (req, res) => {
     try {
         const { client_id, client_address_id, transaction_category_id, delivery_date, notes, document_url } = req.body;
@@ -195,7 +195,6 @@ const obtenerOrden = async (req, res) => {
 };
 
 // Transiciones de estado válidas para órdenes de venta.
-// Única fuente de verdad: cualquier transición no listada aquí se rechaza con 400.
 const ALLOWED_ORDER_TRANSITIONS = {
     BORRADOR: ['CONFIRMADA', 'CANCELADA'],
     CONFIRMADA: ['BORRADOR', 'DESPACHADA', 'CANCELADA'],
@@ -487,7 +486,7 @@ const agregarLinea = async (req, res) => {
                 }
             });
 
-            // Si se proporcionó un lote → modo LOTE: crear assignment y afectar inventario
+            // Si se proporcionó un lote, |Modo LOTE: crear assignment y afectar inventario
             if (lote_id) {
                 const lote = await tx.lote.findUnique({ where: { lote_id: BigInt(lote_id) } });
                 if (!lote) throw new Error('Lote no encontrado');
@@ -558,7 +557,8 @@ const actualizarLinea = async (req, res) => {
             unit_price,
             billing_unit,
             upc,
-            mark_code
+            mark_code,
+            notes
         } = req.body;
 
         if (!packaging_type || !quantity || unit_price === undefined || !billing_unit) {
@@ -640,6 +640,7 @@ const actualizarLinea = async (req, res) => {
         // update that omits them leaves the stored value untouched.
         if (upc !== undefined) data.upc = upcValue;
         if (mark_code !== undefined) data.mark_code = mark_code;
+        if (notes !== undefined) data.notes = notes;
 
         const actualizado = await prisma.salesOrderDetail.update({
             where: { detail_id: BigInt(detail_id) },

@@ -534,7 +534,7 @@ const SalesOrderFormPage = () => {
                       letterSpacing: 0.8,
                       color: 'var(--fc-text-secondary)',
                       fontWeight: 500,
-                    }}>Notas</span>}>
+                    }}>Fito</span>}>
                       <TextArea rows={1} placeholder="Opcional..." />
                     </Form.Item>
                   </Col>
