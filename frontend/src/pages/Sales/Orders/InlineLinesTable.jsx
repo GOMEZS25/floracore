@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Table, Select, Input, InputNumber, Button, Tag, Popconfirm, Tooltip, Typography, notification, Space } from 'antd';
-import { PlusOutlined, DeleteOutlined, SaveOutlined, UndoOutlined } from '@ant-design/icons';
+import { Card, Table, Select, Input, InputNumber, Button, Tag, Popconfirm, Popover, Tooltip, Typography, notification, Space } from 'antd';
+import { PlusOutlined, DeleteOutlined, SaveOutlined, UndoOutlined, FileTextOutlined, FileTextFilled } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
 import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
 
@@ -21,6 +21,10 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
 
   const [rowEdits, setRowEdits] = useState({});
   const [savingRowId, setSavingRowId] = useState(null);
+
+  // Popover de nota por línea: id de la fila abierta y borrador local del textarea.
+  const [noteOpenId, setNoteOpenId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState('');
 
   const handleAdd = async () => {
     const { product_variant_key, cantidad_cajas, ramos_por_caja, tallos_por_ramo, unit_price } = captureRow;
@@ -146,6 +150,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       tallos_por_ramo: edits.stems_per_bunch !== undefined ? edits.stems_per_bunch : row.stems_per_bunch,
       unit_price: edits.unit_price !== undefined ? edits.unit_price : row.unit_price,
       billing_unit: edits.billing_unit !== undefined ? edits.billing_unit : row.billing_unit,
+      notes: edits.notes !== undefined ? edits.notes : row.notes,
     };
 
     setSavingRowId(detailId);
@@ -174,7 +179,69 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       render: (_, r) => {
         const n = r.product?.name || '';
         const a = (r.lote?.variant || r.variant)?.attributes?.map(x => x.value?.value).join(' ') || '';
-        return <Text strong>{`${n} ${a}`.trim()}</Text>;
+        const detailId = r.detail_id || r.id;
+        const noteVal = getRowValue(r, 'notes');
+        const hasNote = noteVal != null && String(noteVal).trim() !== '';
+
+        const applyNote = () => {
+          const clean = noteDraft.trim();
+          updateRowField(r, 'notes', clean.length ? clean : null);
+          setNoteOpenId(null);
+        };
+
+        const noteContent = isReadOnly ? (
+          <div style={{ maxWidth: 260 }}>
+            <div style={{ ...labelStyle, marginBottom: 6 }}>Nota de la línea</div>
+            <div style={{ whiteSpace: 'pre-wrap', color: 'var(--fc-text-primary)' }}>
+              {hasNote ? noteVal : <Text type="secondary">Sin nota</Text>}
+            </div>
+          </div>
+        ) : (
+          <div style={{ width: 280 }}>
+            <div style={{ ...labelStyle, marginBottom: 6 }}>Nota de la línea</div>
+            <Input.TextArea
+              autoFocus
+              rows={3}
+              maxLength={300}
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              placeholder="Escribe una nota para esta línea..."
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+              <Button type="primary" size="small" onClick={applyNote}>Aplicar</Button>
+            </div>
+          </div>
+        );
+
+        return (
+          <Space size={6} align="center">
+            <Text strong>{`${n} ${a}`.trim()}</Text>
+            <Popover
+              trigger="click"
+              open={noteOpenId === detailId}
+              onOpenChange={(open) => {
+                if (open) {
+                  setNoteDraft(hasNote ? String(noteVal) : '');
+                  setNoteOpenId(detailId);
+                } else {
+                  setNoteOpenId(null);
+                }
+              }}
+              content={noteContent}
+            >
+              <span
+                role="button"
+                tabIndex={0}
+                title={hasNote ? 'Ver / editar nota' : 'Agregar nota'}
+                style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
+              >
+                {hasNote
+                  ? <FileTextFilled style={{ color: 'var(--fc-accent)', fontSize: 15 }} />
+                  : <FileTextOutlined style={{ color: 'var(--fc-text-secondary)', fontSize: 15, opacity: 0.55 }} />}
+              </span>
+            </Popover>
+          </Space>
+        );
       },
     },
     {
@@ -359,6 +426,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
             <span style={labelStyle}>PRODUCTO</span>
             <Select
               showSearch
+              popupMatchSelectWidth={false}
               placeholder="Buscar producto..."
               value={captureRow.product_variant_key}
               onChange={(val) => setCaptureRow(prev => ({ ...prev, product_variant_key: val }))}
@@ -427,11 +495,22 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={labelStyle}>Código de marca</span>
+            <span style={labelStyle}>Marca</span>
             <Input
               maxLength={40}
               value={captureRow.mark_code}
               onChange={(e) => setCaptureRow(prev => ({ ...prev, mark_code: e.target.value }))}
+              disabled={isReadOnly || !orderId}
+            />
+          </div>
+
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span style={labelStyle}>NOTAS</span>
+            <Input
+              maxLength={255}
+              value={captureRow.notes}
+              onChange={(e) => setCaptureRow(prev => ({ ...prev, notes: e.target.value }))}
               disabled={isReadOnly || !orderId}
             />
           </div>
@@ -454,96 +533,96 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
           justifyContent: 'flex-end',
           marginTop: 12,
         }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 12,
-          width: '50%',
-        }}>
           <div style={{
-            backgroundColor: 'var(--fc-surface)',
-            border: '1px solid var(--fc-border)',
-            borderRadius: 12,
-            padding: '12px 14px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 12,
+            width: '50%',
           }}>
             <div style={{
-              fontSize: 11,
-              textTransform: 'uppercase',
-              letterSpacing: 0.8,
-              color: 'var(--fc-text-secondary)',
-              marginBottom: 4,
-            }}>Cajas de esta línea</div>
-            <div style={{
-              fontSize: 18,
-              fontWeight: 500,
-              color: 'var(--fc-text-primary)',
-              fontVariantNumeric: 'tabular-nums',
-            }}>{(Number(captureRow.cantidad_cajas) || 0).toLocaleString('es-CO')}</div>
-          </div>
+              backgroundColor: 'var(--fc-surface)',
+              border: '1px solid var(--fc-border)',
+              borderRadius: 12,
+              padding: '12px 14px',
+            }}>
+              <div style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+                color: 'var(--fc-text-secondary)',
+                marginBottom: 4,
+              }}>Cajas de esta línea</div>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 500,
+                color: 'var(--fc-text-primary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>{(Number(captureRow.cantidad_cajas) || 0).toLocaleString('es-CO')}</div>
+            </div>
 
-          <div style={{
-            backgroundColor: 'var(--fc-surface)',
-            border: '1px solid var(--fc-border)',
-            borderRadius: 12,
-            padding: '12px 14px',
-          }}>
             <div style={{
-              fontSize: 11,
-              textTransform: 'uppercase',
-              letterSpacing: 0.8,
-              color: 'var(--fc-text-secondary)',
-              marginBottom: 4,
-            }}>Ramos de esta línea</div>
-            <div style={{
-              fontSize: 18,
-              fontWeight: 500,
-              color: 'var(--fc-text-primary)',
-              fontVariantNumeric: 'tabular-nums',
-            }}>{totalRamosEstimado.toLocaleString('es-CO')}</div>
-          </div>
+              backgroundColor: 'var(--fc-surface)',
+              border: '1px solid var(--fc-border)',
+              borderRadius: 12,
+              padding: '12px 14px',
+            }}>
+              <div style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+                color: 'var(--fc-text-secondary)',
+                marginBottom: 4,
+              }}>Ramos de esta línea</div>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 500,
+                color: 'var(--fc-text-primary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>{totalRamosEstimado.toLocaleString('es-CO')}</div>
+            </div>
 
-          <div style={{
-            backgroundColor: 'var(--fc-surface)',
-            border: '1px solid var(--fc-border)',
-            borderRadius: 12,
-            padding: '12px 14px',
-          }}>
             <div style={{
-              fontSize: 11,
-              textTransform: 'uppercase',
-              letterSpacing: 0.8,
-              color: 'var(--fc-text-secondary)',
-              marginBottom: 4,
-            }}>Tallos de esta línea</div>
-            <div style={{
-              fontSize: 18,
-              fontWeight: 500,
-              color: 'var(--fc-text-primary)',
-              fontVariantNumeric: 'tabular-nums',
-            }}>{totalTallosEstimado.toLocaleString('es-CO')}</div>
-          </div>
+              backgroundColor: 'var(--fc-surface)',
+              border: '1px solid var(--fc-border)',
+              borderRadius: 12,
+              padding: '12px 14px',
+            }}>
+              <div style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+                color: 'var(--fc-text-secondary)',
+                marginBottom: 4,
+              }}>Tallos de esta línea</div>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 500,
+                color: 'var(--fc-text-primary)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>{totalTallosEstimado.toLocaleString('es-CO')}</div>
+            </div>
 
-          <div style={{
-            backgroundColor: 'var(--fc-accent-soft)',
-            border: '1px solid var(--fc-accent)',
-            borderRadius: 12,
-            padding: '12px 14px',
-          }}>
             <div style={{
-              fontSize: 11,
-              textTransform: 'uppercase',
-              letterSpacing: 0.8,
-              color: 'var(--fc-accent)',
-              marginBottom: 4,
-            }}>Subtotal de esta línea</div>
-            <div style={{
-              fontSize: 18,
-              fontWeight: 500,
-              color: 'var(--fc-accent)',
-              fontVariantNumeric: 'tabular-nums',
-            }}>{getCurrencySymbol(clientCurrency)} {formatMoney(subtotalEstimado)}</div>
+              backgroundColor: 'var(--fc-accent-soft)',
+              border: '1px solid var(--fc-accent)',
+              borderRadius: 12,
+              padding: '12px 14px',
+            }}>
+              <div style={{
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+                color: 'var(--fc-accent)',
+                marginBottom: 4,
+              }}>Subtotal de esta línea</div>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 500,
+                color: 'var(--fc-accent)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>{getCurrencySymbol(clientCurrency)} {formatMoney(subtotalEstimado)}</div>
+            </div>
           </div>
-        </div>
         </div>
       )}
 
