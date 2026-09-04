@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Table, Select, Input, InputNumber, Button, Tag, Popconfirm, Popover, Tooltip, Typography, notification, Space } from 'antd';
+import { Card, Table, Select, Input, InputNumber, Button, Tag, Popconfirm, Popover, Modal, Tooltip, Typography, notification, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined, UndoOutlined, FileTextOutlined, FileTextFilled } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
 import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
@@ -16,15 +16,21 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     billing_unit: 'TALLO',
     upc: '',
     mark_code: '',
+    notes: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
   const [rowEdits, setRowEdits] = useState({});
   const [savingRowId, setSavingRowId] = useState(null);
 
-  // Popover de nota por línea: id de la fila abierta y borrador local del textarea.
+  // Detalle por línea: noteOpenId = fila con el Modal editable abierto;
+  // hoverDetailId = fila con el preview de solo lectura por hover.
+  // noteDraft / upcDraft son los borradores del Modal; al aplicar se
+  // vuelcan a rowEdits (dirty).
   const [noteOpenId, setNoteOpenId] = useState(null);
+  const [hoverDetailId, setHoverDetailId] = useState(null);
   const [noteDraft, setNoteDraft] = useState('');
+  const [upcDraft, setUpcDraft] = useState('');
 
   const handleAdd = async () => {
     const { product_variant_key, cantidad_cajas, ramos_por_caja, tallos_por_ramo, unit_price } = captureRow;
@@ -48,6 +54,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       billing_unit: captureRow.billing_unit,
       upc: captureRow.upc || null,
       mark_code: captureRow.mark_code || null,
+      notes: captureRow.notes?.trim() ? captureRow.notes : null,
     };
 
     setSubmitting(true);
@@ -63,6 +70,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         billing_unit: 'TALLO',
         upc: '',
         mark_code: '',
+        notes: '',
       });
       onLinesChanged();
     } catch (error) {
@@ -151,6 +159,8 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       unit_price: edits.unit_price !== undefined ? edits.unit_price : row.unit_price,
       billing_unit: edits.billing_unit !== undefined ? edits.billing_unit : row.billing_unit,
       notes: edits.notes !== undefined ? edits.notes : row.notes,
+      upc: edits.upc !== undefined ? edits.upc : row.upc,
+      mark_code: edits.mark_code !== undefined ? edits.mark_code : row.mark_code,
     };
 
     setSavingRowId(detailId);
@@ -172,6 +182,37 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
   const labelStyle = { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--fc-text-secondary)', fontWeight: 500 };
   const fixedTagStyle = { padding: '4px 11px', border: '1px solid var(--fc-border)', borderRadius: 8, backgroundColor: '#f9fafb', color: 'var(--fc-text-secondary)', fontSize: 14 };
 
+  // Bloque de solo lectura del detalle (nota + UPC). Reutilizado por el
+  // preview de hover y por el Modal en modo isReadOnly. Lee del buffer de
+  // edición vía getRowValue, con fallback al valor del servidor.
+  const renderDetailReadOnly = (row) => {
+    const noteVal = getRowValue(row, 'notes');
+    const hasNote = noteVal != null && String(noteVal).trim() !== '';
+    const upcVal = getRowValue(row, 'upc');
+    const hasUpc = upcVal != null && String(upcVal).trim() !== '';
+    return (
+      <div style={{ maxWidth: 260 }}>
+        <div style={{ ...labelStyle, marginBottom: 6 }}>Detalle</div>
+        <div style={{ ...labelStyle, fontWeight: 400, marginBottom: 4 }}>Nota</div>
+        <div style={{ whiteSpace: 'pre-wrap', color: 'var(--fc-text-primary)', marginBottom: 10 }}>
+          {hasNote ? noteVal : <Text type="secondary">Sin nota</Text>}
+        </div>
+        <div style={{ ...labelStyle, fontWeight: 400, marginBottom: 4 }}>UPC</div>
+        <div style={{ color: 'var(--fc-text-primary)' }}>
+          {hasUpc ? upcVal : <Text type="secondary">Sin UPC</Text>}
+        </div>
+      </div>
+    );
+  };
+
+  const applyDetail = (row) => {
+    const cleanNote = noteDraft.trim();
+    updateRowField(row, 'notes', cleanNote.length ? cleanNote : null);
+    const cleanUpc = upcDraft.trim();
+    updateRowField(row, 'upc', cleanUpc.length ? cleanUpc : null);
+    setNoteOpenId(null);
+  };
+
   const columns = [
     {
       title: 'PRODUCTO',
@@ -182,60 +223,34 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         const detailId = r.detail_id || r.id;
         const noteVal = getRowValue(r, 'notes');
         const hasNote = noteVal != null && String(noteVal).trim() !== '';
-
-        const applyNote = () => {
-          const clean = noteDraft.trim();
-          updateRowField(r, 'notes', clean.length ? clean : null);
-          setNoteOpenId(null);
-        };
-
-        const noteContent = isReadOnly ? (
-          <div style={{ maxWidth: 260 }}>
-            <div style={{ ...labelStyle, marginBottom: 6 }}>Nota de la línea</div>
-            <div style={{ whiteSpace: 'pre-wrap', color: 'var(--fc-text-primary)' }}>
-              {hasNote ? noteVal : <Text type="secondary">Sin nota</Text>}
-            </div>
-          </div>
-        ) : (
-          <div style={{ width: 280 }}>
-            <div style={{ ...labelStyle, marginBottom: 6 }}>Nota de la línea</div>
-            <Input.TextArea
-              autoFocus
-              rows={3}
-              maxLength={300}
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-              placeholder="Escribe una nota para esta línea..."
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-              <Button type="primary" size="small" onClick={applyNote}>Aplicar</Button>
-            </div>
-          </div>
-        );
+        const upcVal = getRowValue(r, 'upc');
+        const hasUpc = upcVal != null && String(upcVal).trim() !== '';
+        const hasDetail = hasNote || hasUpc;
 
         return (
           <Space size={6} align="center">
             <Text strong>{`${n} ${a}`.trim()}</Text>
             <Popover
-              trigger="click"
-              open={noteOpenId === detailId}
-              onOpenChange={(open) => {
-                if (open) {
-                  setNoteDraft(hasNote ? String(noteVal) : '');
-                  setNoteOpenId(detailId);
-                } else {
-                  setNoteOpenId(null);
-                }
-              }}
-              content={noteContent}
+              trigger="hover"
+              mouseEnterDelay={0.3}
+              open={hoverDetailId === detailId && noteOpenId === null}
+              onOpenChange={(open) => setHoverDetailId(open ? detailId : null)}
+              content={renderDetailReadOnly(r)}
             >
               <span
                 role="button"
                 tabIndex={0}
-                title={hasNote ? 'Ver / editar nota' : 'Agregar nota'}
+                title={hasDetail ? 'Ver / editar detalle' : 'Agregar detalle'}
+                onClick={() => {
+                  // El clic abre el Modal editable; el hover solo muestra el preview.
+                  setHoverDetailId(null);
+                  setNoteDraft(hasNote ? String(noteVal) : '');
+                  setUpcDraft(hasUpc ? String(upcVal) : '');
+                  setNoteOpenId(detailId);
+                }}
                 style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', lineHeight: 1 }}
               >
-                {hasNote
+                {hasDetail
                   ? <FileTextFilled style={{ color: 'var(--fc-accent)', fontSize: 15 }} />
                   : <FileTextOutlined style={{ color: 'var(--fc-text-secondary)', fontSize: 15, opacity: 0.55 }} />}
               </span>
@@ -249,6 +264,23 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       dataIndex: 'packaging_type',
       render: (val) => <Tag>{val || 'CAJA'}</Tag>,
       width: 100,
+    },
+    {
+      title: 'MARCA',
+      key: 'mark_code',
+      width: 120,
+      render: (_, r) => (
+        <Input
+          size="small"
+          value={getRowValue(r, 'mark_code') ?? ''}
+          onChange={(e) => {
+            const v = e.target.value;
+            updateRowField(r, 'mark_code', v.trim() === '' ? null : v);
+          }}
+          disabled={isReadOnly}
+          style={{ width: '100%' }}
+        />
+      ),
     },
     {
       title: 'CAJAS',
@@ -267,7 +299,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       ),
     },
     {
-      title: 'RAMOS/CAJA',
+      title: 'RAMOS',
       key: 'ramos_caja',
       width: 110,
       align: 'right',
@@ -283,7 +315,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       ),
     },
     {
-      title: 'TALLOS/RAMO',
+      title: 'TALLOS',
       key: 'tallos_ramo',
       width: 110,
       align: 'right',
@@ -299,7 +331,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       ),
     },
     {
-      title: 'UNIT PRICE',
+      title: 'PRECIO UNT',
       key: 'unit_price',
       width: 130,
       align: 'right',
@@ -317,7 +349,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       ),
     },
     {
-      title: 'PRICE UNIT',
+      title: 'UND PRECIO',
       key: 'price_unit',
       width: 100,
       render: (_, r) => (
@@ -400,6 +432,13 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     },
   ];
 
+  // La fila del Modal se deriva por id en cada render (nunca se guarda en
+  // estado) para que refleje siempre el buffer vivo de rowEdits.
+  const modalRow =
+    noteOpenId != null
+      ? (orderLines || []).find((r) => (r.detail_id || r.id) === noteOpenId)
+      : null;
+
   return (
     <Card
       variant="borderless"
@@ -465,12 +504,12 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={labelStyle}>UNIT PRICE</span>
+            <span style={labelStyle}>PRECIO UNT</span>
             <InputNumber min={0} step={0.01} prefix={getCurrencySymbol(clientCurrency)} value={captureRow.unit_price} onChange={(v) => setCaptureRow(prev => ({ ...prev, unit_price: v }))} disabled={isReadOnly || !orderId} style={{ width: '100%' }} />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={labelStyle}>PRICE UNIT</span>
+            <span style={labelStyle}>UND PRECIO</span>
             <Select
               value={captureRow.billing_unit}
               onChange={(val) => setCaptureRow(prev => ({ ...prev, billing_unit: val }))}
@@ -639,10 +678,59 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         dataSource={orderLines}
         rowKey={r => r.detail_id || r.id}
         pagination={false}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 1230 }}
         locale={{ emptyText: 'No hay líneas todavía' }}
         rowClassName={(r) => isRowDirty(r) ? 'floracore-row-dirty' : ''}
       />
+
+      <Modal
+        open={noteOpenId !== null}
+        onCancel={() => setNoteOpenId(null)}
+        destroyOnHidden
+        title="Detalle"
+        footer={
+          isReadOnly
+            ? [
+                <Button key="close" onClick={() => setNoteOpenId(null)}>Cerrar</Button>,
+              ]
+            : [
+                <Button key="cancel" onClick={() => setNoteOpenId(null)}>Cancelar</Button>,
+                <Button
+                  key="apply"
+                  type="primary"
+                  onClick={() => modalRow && applyDetail(modalRow)}
+                >
+                  Aplicar
+                </Button>,
+              ]
+        }
+      >
+        {modalRow &&
+          (isReadOnly ? (
+            renderDetailReadOnly(modalRow)
+          ) : (
+            <div>
+              <div style={{ ...labelStyle, fontWeight: 400, marginBottom: 4 }}>Nota</div>
+              <Input.TextArea
+                autoFocus
+                rows={3}
+                maxLength={300}
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                placeholder="Escribe una nota para esta línea..."
+              />
+              <div style={{ ...labelStyle, fontWeight: 400, margin: '10px 0 4px' }}>UPC</div>
+              <Input
+                value={upcDraft}
+                onChange={(e) => setUpcDraft(e.target.value)}
+                placeholder="Código UPC"
+              />
+              <div style={{ fontSize: 11, color: 'var(--fc-text-secondary)', marginTop: 4 }}>
+                Formato esperado: 12 o 13 dígitos.
+              </div>
+            </div>
+          ))}
+      </Modal>
     </Card>
   );
 };
