@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Card, Table, Select, Input, InputNumber, Button, Tag, Popconfirm, Popover, Modal, Tooltip, Typography, notification, Space } from 'antd';
-import { PlusOutlined, DeleteOutlined, SaveOutlined, UndoOutlined, FileTextOutlined, FileTextFilled } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, SaveOutlined, UndoOutlined, FileTextOutlined, FileTextFilled, AppstoreOutlined } from '@ant-design/icons';
 import salesService from '../../../services/salesService';
 import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
+import AssortmentModal, { mapServerComponents, toPayloadComponents, sumBunches, sumStems } from './AssortmentModal';
 
 const { Text } = Typography;
 
@@ -32,9 +33,24 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
   const [noteDraft, setNoteDraft] = useState('');
   const [upcDraft, setUpcDraft] = useState('');
 
+  // Surtido: los componentes de la línea que se está capturando viven aquí
+  // hasta que el usuario da "+ Agregar"; los de una línea ya agregada viven en
+  // rowEdits[detailId].components. assortmentOpenId identifica qué surtido está
+  // abierto: 'capture' para la barra, o el detail_id de una fila.
+  const [captureComponents, setCaptureComponents] = useState([]);
+  const [assortmentOpenId, setAssortmentOpenId] = useState(null);
+
   const handleAdd = async () => {
     const { product_variant_key, cantidad_cajas, ramos_por_caja, tallos_por_ramo, unit_price } = captureRow;
-    if (!product_variant_key || !cantidad_cajas || !ramos_por_caja || !tallos_por_ramo || !unit_price) {
+    const isAssorted = captureComponents.length > 0;
+
+    // En una caja surtida ramos/caja sale del surtido y tallos/ramo no aplica,
+    // así que esos dos campos no se exigen.
+    if (!product_variant_key || !cantidad_cajas || !unit_price) {
+      notification.error({ message: 'Completa todos los campos' });
+      return;
+    }
+    if (!isAssorted && (!ramos_por_caja || !tallos_por_ramo)) {
       notification.error({ message: 'Completa todos los campos' });
       return;
     }
@@ -48,14 +64,18 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       variant_id,
       packaging_type: 'CAJA',
       quantity: cantidad_cajas,
-      tallos_por_ramo,
-      ramos_por_caja,
+      tallos_por_ramo: isAssorted ? null : tallos_por_ramo,
+      ramos_por_caja: isAssorted ? sumBunches(captureComponents) : ramos_por_caja,
       unit_price,
       billing_unit: captureRow.billing_unit,
       upc: captureRow.upc || null,
       mark_code: captureRow.mark_code || null,
       notes: captureRow.notes?.trim() ? captureRow.notes : null,
     };
+
+    if (isAssorted) {
+      payload.components = toPayloadComponents(captureComponents);
+    }
 
     setSubmitting(true);
     try {
@@ -72,6 +92,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         mark_code: '',
         notes: '',
       });
+      setCaptureComponents([]);
       onLinesChanged();
     } catch (error) {
       notification.error({
@@ -83,20 +104,30 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     }
   };
 
+  const captureIsAssorted = captureComponents.length > 0;
+
+  // Contenido de UNA caja. En una caja surtida sale de los componentes; si no,
+  // de los campos ramos/caja y tallos/ramo de la barra.
+  const ramosPorCaja = captureIsAssorted
+    ? sumBunches(captureComponents)
+    : (Number(captureRow.ramos_por_caja) || 0);
+  const tallosPorCaja = captureIsAssorted
+    ? sumStems(captureComponents)
+    : (Number(captureRow.ramos_por_caja) || 0) * (Number(captureRow.tallos_por_ramo) || 0);
+
+  const totalRamosEstimado = (Number(captureRow.cantidad_cajas) || 0) * ramosPorCaja;
+  const totalTallosEstimado = (Number(captureRow.cantidad_cajas) || 0) * tallosPorCaja;
+
   const calcSubtotal = () => {
     const cajas = Number(captureRow.cantidad_cajas) || 0;
-    const ramos_caja = Number(captureRow.ramos_por_caja) || 0;
-    const tallos_ramo = Number(captureRow.tallos_por_ramo) || 0;
     const price = Number(captureRow.unit_price) || 0;
     const bu = captureRow.billing_unit;
 
     if (bu === 'TALLO') {
-      const total_tallos = cajas * ramos_caja * tallos_ramo;
-      return total_tallos * price;
+      return totalTallosEstimado * price;
     }
     if (bu === 'RAMO') {
-      const total_ramos = cajas * ramos_caja;
-      return total_ramos * price;
+      return totalRamosEstimado * price;
     }
     if (bu === 'CAJA') {
       return cajas * price;
@@ -105,13 +136,6 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
   };
 
   const subtotalEstimado = calcSubtotal();
-  const totalTallosEstimado =
-    (Number(captureRow.cantidad_cajas) || 0) *
-    (Number(captureRow.ramos_por_caja) || 0) *
-    (Number(captureRow.tallos_por_ramo) || 0);
-  const totalRamosEstimado =
-    (Number(captureRow.cantidad_cajas) || 0) *
-    (Number(captureRow.ramos_por_caja) || 0);
 
   const getRowValue = (row, field) => {
     const detailId = row.detail_id || row.id;
@@ -121,11 +145,37 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     return row[field];
   };
 
+  // Firma comparable de un surtido, para detectar cambios reales (los arrays
+  // nunca son iguales por identidad).
+  const componentsSignature = (list) =>
+    JSON.stringify(
+      (list || []).map(c => [
+        String(c.component_product_id),
+        String(c.component_variant_id ?? ''),
+        Number(c.bunches),
+        Number(c.stems_per_bunch),
+      ])
+    );
+
+  // Componentes vigentes de una fila: el borrador si el usuario tocó el
+  // surtido, si no los que vinieron del servidor.
+  const getRowComponents = (row) => {
+    const detailId = row.detail_id || row.id;
+    const edited = rowEdits[detailId]?.components;
+    if (edited !== undefined) return edited;
+    return mapServerComponents(row.components);
+  };
+
   const isRowDirty = (row) => {
     const detailId = row.detail_id || row.id;
     const edits = rowEdits[detailId];
     if (!edits) return false;
-    return Object.keys(edits).some(field => edits[field] !== row[field]);
+    return Object.keys(edits).some(field => {
+      if (field === 'components') {
+        return componentsSignature(edits.components) !== componentsSignature(mapServerComponents(row.components));
+      }
+      return edits[field] !== row[field];
+    });
   };
 
   const updateRowField = (row, field, value) => {
@@ -151,6 +201,9 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
   const saveRow = async (row) => {
     const detailId = row.detail_id || row.id;
     const edits = rowEdits[detailId] || {};
+    const components = getRowComponents(row);
+    const isAssorted = components.length > 0;
+
     const payload = {
       packaging_type: row.packaging_type || 'CAJA',
       quantity: edits.quantity !== undefined ? edits.quantity : row.quantity,
@@ -162,6 +215,18 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       upc: edits.upc !== undefined ? edits.upc : row.upc,
       mark_code: edits.mark_code !== undefined ? edits.mark_code : row.mark_code,
     };
+
+    if (isAssorted) {
+      payload.ramos_por_caja = sumBunches(components);
+      payload.tallos_por_ramo = null;
+    }
+
+    // Una línea surtida reenvía siempre su surtido: el backend solo recalcula
+    // los totales del surtido cuando recibe components, y si se omite volvería
+    // a calcularlos desde ramos/caja y tallos/ramo.
+    if (isAssorted || edits.components !== undefined) {
+      payload.components = toPayloadComponents(components);
+    }
 
     setSavingRowId(detailId);
     try {
@@ -226,10 +291,22 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         const upcVal = getRowValue(r, 'upc');
         const hasUpc = upcVal != null && String(upcVal).trim() !== '';
         const hasDetail = hasNote || hasUpc;
+        const rowComponents = getRowComponents(r);
 
         return (
           <Space size={6} align="center">
             <Text strong>{`${n} ${a}`.trim()}</Text>
+            {rowComponents.length > 0 && (
+              <Tooltip title="Ver surtido de esta caja">
+                <Tag
+                  color="green"
+                  style={{ cursor: 'pointer', margin: 0 }}
+                  onClick={() => setAssortmentOpenId(detailId)}
+                >
+                  Surtida
+                </Tag>
+              </Tooltip>
+            )}
             <Popover
               trigger="hover"
               mouseEnterDelay={0.3}
@@ -303,32 +380,40 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       key: 'ramos_caja',
       width: 110,
       align: 'right',
-      render: (_, r) => (
-        <InputNumber
-          min={1}
-          size="small"
-          value={getRowValue(r, 'bunches_per_box')}
-          onChange={(v) => updateRowField(r, 'bunches_per_box', v)}
-          disabled={isReadOnly}
-          style={{ width: '100%' }}
-        />
-      ),
+      render: (_, r) => {
+        const rowComponents = getRowComponents(r);
+        const assorted = rowComponents.length > 0;
+        return (
+          <InputNumber
+            min={1}
+            size="small"
+            value={assorted ? sumBunches(rowComponents) : getRowValue(r, 'bunches_per_box')}
+            onChange={(v) => updateRowField(r, 'bunches_per_box', v)}
+            disabled={isReadOnly || assorted}
+            style={{ width: '100%' }}
+          />
+        );
+      },
     },
     {
       title: 'TALLOS',
       key: 'tallos_ramo',
       width: 110,
       align: 'right',
-      render: (_, r) => (
-        <InputNumber
-          min={1}
-          size="small"
-          value={getRowValue(r, 'stems_per_bunch')}
-          onChange={(v) => updateRowField(r, 'stems_per_bunch', v)}
-          disabled={isReadOnly}
-          style={{ width: '100%' }}
-        />
-      ),
+      render: (_, r) => {
+        const assorted = getRowComponents(r).length > 0;
+        return (
+          <InputNumber
+            min={1}
+            size="small"
+            value={assorted ? null : getRowValue(r, 'stems_per_bunch')}
+            placeholder={assorted ? '—' : undefined}
+            onChange={(v) => updateRowField(r, 'stems_per_bunch', v)}
+            disabled={isReadOnly || assorted}
+            style={{ width: '100%' }}
+          />
+        );
+      },
     },
     {
       title: 'PRECIO UNT',
@@ -383,13 +468,20 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     {
       title: '',
       key: 'acciones',
-      width: 120,
+      width: 155,
       render: (_, r) => {
         if (isReadOnly) return null;
         const dirty = isRowDirty(r);
         const detailId = r.detail_id || r.id;
         return (
           <Space size={4}>
+            <Tooltip title="Surtido de la caja">
+              <Button
+                size="small"
+                icon={<AppstoreOutlined />}
+                onClick={() => setAssortmentOpenId(detailId)}
+              />
+            </Tooltip>
             {dirty && (
               <>
                 <Tooltip title="Guardar cambios">
@@ -439,6 +531,13 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
       ? (orderLines || []).find((r) => (r.detail_id || r.id) === noteOpenId)
       : null;
 
+  // Fila cuyo surtido está abierto ('capture' = la barra de captura, que aún
+  // no tiene fila).
+  const assortmentRow =
+    assortmentOpenId != null && assortmentOpenId !== 'capture'
+      ? (orderLines || []).find((r) => (r.detail_id || r.id) === assortmentOpenId)
+      : null;
+
   return (
     <Card
       variant="borderless"
@@ -463,24 +562,37 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1.2fr 1fr 1fr 1.2fr auto', gap: 12, alignItems: 'end', padding: '12px 0' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={labelStyle}>PRODUCTO</span>
-            <Select
-              showSearch
-              popupMatchSelectWidth={false}
-              placeholder="Buscar producto..."
-              value={captureRow.product_variant_key}
-              onChange={(val) => setCaptureRow(prev => ({ ...prev, product_variant_key: val }))}
-              filterOption={(input, option) => option?.label?.toString().toLowerCase().includes(input.toLowerCase())}
-              options={allProducts.flatMap(p => {
-                if (!p.variants || p.variants.length === 0) {
-                  return [{ value: `${p.product_id}_base`, label: p.name }];
-                }
-                return p.variants.map(v => {
-                  const attrStr = v.attributes?.map(a => a.value?.value).join(' ') || '';
-                  return { value: `${p.product_id}_${v.variant_id}`, label: attrStr ? `${p.name} ${attrStr}` : p.name };
-                });
-              })}
-              disabled={isReadOnly || !orderId}
-            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Select
+                showSearch
+                popupMatchSelectWidth={false}
+                placeholder="Buscar producto..."
+                value={captureRow.product_variant_key}
+                onChange={(val) => setCaptureRow(prev => ({ ...prev, product_variant_key: val }))}
+                filterOption={(input, option) => option?.label?.toString().toLowerCase().includes(input.toLowerCase())}
+                options={allProducts.flatMap(p => {
+                  if (!p.variants || p.variants.length === 0) {
+                    return [{ value: `${p.product_id}_base`, label: p.name }];
+                  }
+                  return p.variants.map(v => {
+                    const attrStr = v.attributes?.map(a => a.value?.value).join(' ') || '';
+                    return { value: `${p.product_id}_${v.variant_id}`, label: attrStr ? `${p.name} ${attrStr}` : p.name };
+                  });
+                })}
+                disabled={isReadOnly || !orderId}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+              <Tooltip title={captureRow.product_variant_key ? 'Surtir esta caja' : 'Elige primero el producto'}>
+                <Button
+                  icon={<AppstoreOutlined />}
+                  onClick={() => setAssortmentOpenId('capture')}
+                  disabled={isReadOnly || !orderId || !captureRow.product_variant_key}
+                  type={captureIsAssorted ? 'primary' : 'default'}
+                >
+                  Surtir{captureIsAssorted ? ` (${captureComponents.length})` : ''}
+                </Button>
+              </Tooltip>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -495,12 +607,25 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={labelStyle}>RAMOS/CAJA</span>
-            <InputNumber min={1} value={captureRow.ramos_por_caja} onChange={(v) => setCaptureRow(prev => ({ ...prev, ramos_por_caja: v }))} disabled={isReadOnly || !orderId} style={{ width: '100%' }} />
+            <InputNumber
+              min={1}
+              value={captureIsAssorted ? ramosPorCaja : captureRow.ramos_por_caja}
+              onChange={(v) => setCaptureRow(prev => ({ ...prev, ramos_por_caja: v }))}
+              disabled={isReadOnly || !orderId || captureIsAssorted}
+              style={{ width: '100%' }}
+            />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={labelStyle}>TALLOS/RAMO</span>
-            <InputNumber min={1} value={captureRow.tallos_por_ramo} onChange={(v) => setCaptureRow(prev => ({ ...prev, tallos_por_ramo: v }))} disabled={isReadOnly || !orderId} style={{ width: '100%' }} />
+            <InputNumber
+              min={1}
+              value={captureIsAssorted ? null : captureRow.tallos_por_ramo}
+              placeholder={captureIsAssorted ? '—' : undefined}
+              onChange={(v) => setCaptureRow(prev => ({ ...prev, tallos_por_ramo: v }))}
+              disabled={isReadOnly || !orderId || captureIsAssorted}
+              style={{ width: '100%' }}
+            />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -678,7 +803,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
         dataSource={orderLines}
         rowKey={r => r.detail_id || r.id}
         pagination={false}
-        scroll={{ x: 1230 }}
+        scroll={{ x: 1265 }}
         locale={{ emptyText: 'No hay líneas todavía' }}
         rowClassName={(r) => isRowDirty(r) ? 'floracore-row-dirty' : ''}
       />
@@ -731,6 +856,28 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
             </div>
           ))}
       </Modal>
+
+      {assortmentOpenId !== null && (
+        <AssortmentModal
+          open
+          allProducts={allProducts}
+          isReadOnly={isReadOnly}
+          initialComponents={
+            assortmentOpenId === 'capture'
+              ? captureComponents
+              : (assortmentRow ? getRowComponents(assortmentRow) : [])
+          }
+          onCancel={() => setAssortmentOpenId(null)}
+          onSave={(components) => {
+            if (assortmentOpenId === 'capture') {
+              setCaptureComponents(components);
+            } else if (assortmentRow) {
+              updateRowField(assortmentRow, 'components', components);
+            }
+            setAssortmentOpenId(null);
+          }}
+        />
+      )}
     </Card>
   );
 };
