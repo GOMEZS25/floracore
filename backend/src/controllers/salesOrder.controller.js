@@ -172,6 +172,20 @@ const obtenerOrden = async (req, res) => {
                                     }
                                 }
                             }
+                        },
+                        components: {
+                            include: {
+                                component_product: true,
+                                component_variant: {
+                                    include: {
+                                        attributes: {
+                                            include: {
+                                                value: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     },
                     orderBy: { line_number: 'asc' }
@@ -405,13 +419,27 @@ const agregarLinea = async (req, res) => {
             billing_unit,
             notes,
             upc,
-            mark_code
+            mark_code,
+            components
         } = req.body;
 
         if (!product_id || !packaging_type || !quantity || unit_price === undefined || !billing_unit) {
             return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
         }
 
+        const is_assorted = Array.isArray(components) && components.length > 0;
+        if (is_assorted) {
+            for (const c of components) {
+                if (!c.component_product_id || !c.component_variant_id || !c.bunches || !c.stems_per_bunch) {
+                    return res.status(400).json({ mensaje: 'Cada componente requiere product_id, variant_id, bunches y stems_per_bunch' });
+                }
+            }
+        }
+        //Validar que una caja surtida no puede asignarse a un lote
+        if (is_assorted && lote_id) {
+            return res.status(400).json({ mensaje: 'Una caja surtida no puede asignarse a un lote en esta fase' });
+        }
+        // validaciones de upc
         const upcResult = validateUpc(upc);
         if (upcResult.error) {
             return res.status(400).json({ mensaje: upcResult.error });
@@ -486,6 +514,51 @@ const agregarLinea = async (req, res) => {
                 }
             });
 
+            // Si vienen componentes
+            if (is_assorted) {
+                const productIds = components.map(c => BigInt(c.component_product_id));
+                const productos = await tx.product.findMany({
+                    where: { product_id: { in: productIds } }
+                });
+                const nombreMap = new Map(productos.map(p => [p.product_id.toString(), p.name]));
+
+                await tx.salesOrderDetailComponent.createMany({
+                    data: components.map(c => ({
+                        detail_id: nuevoDetalle.detail_id,
+                        component_product_id: BigInt(c.component_product_id),
+                        component_variant_id: BigInt(c.component_variant_id),
+                        product_name_snapshot: nombreMap.get(c.component_product_id.toString()) ?? '',
+                        bunches: c.bunches,
+                        stems_per_bunch: c.stems_per_bunch,
+                    }))
+                });
+
+                const stems_por_caja   = components.reduce((sum, c) => sum + (c.bunches * c.stems_per_bunch), 0);
+                const bunches_por_caja = components.reduce((sum, c) => sum + c.bunches, 0);
+
+                const comp_total_stems   = stems_por_caja * qty;
+                const comp_total_bunches = bunches_por_caja * qty;
+                const comp_total_boxes   = qty;
+
+                let comp_subtotal = 0;
+                if (billing_unit === 'TALLO') {
+                    comp_subtotal = comp_total_stems * price;
+                } else if (billing_unit === 'RAMO') {
+                    comp_subtotal = comp_total_bunches * price;
+                } else if (billing_unit === 'CAJA') {
+                    comp_subtotal = comp_total_boxes * price;
+                }
+
+                await tx.salesOrderDetail.update({
+                    where: { detail_id: nuevoDetalle.detail_id },
+                    data: {
+                        total_stems: comp_total_stems,
+                        total_bunches: comp_total_bunches,
+                        total_boxes: comp_total_boxes,
+                        subtotal: comp_subtotal
+                    }
+                });
+            }
             // Si se proporcionó un lote, |Modo LOTE: crear assignment y afectar inventario
             if (lote_id) {
                 const lote = await tx.lote.findUnique({ where: { lote_id: BigInt(lote_id) } });
@@ -501,7 +574,6 @@ const agregarLinea = async (req, res) => {
                     throw err;
                 }
 
-                // Crear assignment
                 await tx.salesOrderAssignment.create({
                     data: {
                         detail_id: nuevoDetalle.detail_id,
@@ -510,7 +582,6 @@ const agregarLinea = async (req, res) => {
                     }
                 });
 
-                // Afectar inventario
                 await tx.lote.update({
                     where: { lote_id: BigInt(lote_id) },
                     data: {
@@ -518,7 +589,7 @@ const agregarLinea = async (req, res) => {
                         cantidad_reservada: { increment: total_stems }
                     }
                 });
-
+                // registrar movimiento en inventario
                 await tx.stockMovement.create({
                     data: {
                         lote_id: BigInt(lote_id),
@@ -558,7 +629,8 @@ const actualizarLinea = async (req, res) => {
             billing_unit,
             upc,
             mark_code,
-            notes
+            notes,
+            components
         } = req.body;
 
         if (!packaging_type || !quantity || unit_price === undefined || !billing_unit) {
@@ -574,6 +646,17 @@ const actualizarLinea = async (req, res) => {
             upcValue = upcResult.value;
         }
 
+        // validar componentes si vienen
+        if (components !== undefined) {
+            if (!Array.isArray(components)) {
+                return res.status(400).json({ mensaje: 'components debe ser un array' });
+            }
+            for (const c of components) {
+                if (!c.component_product_id || !c.bunches || !c.stems_per_bunch) {
+                    return res.status(400).json({ mensaje: 'Cada componente requiere product_id, bunches y stems_per_bunch' });
+                }
+            }
+        }
         const detalle = await prisma.salesOrderDetail.findUnique({
             where: { detail_id: BigInt(detail_id) },
             include: { order: true, assignments: true }
@@ -642,9 +725,61 @@ const actualizarLinea = async (req, res) => {
         if (mark_code !== undefined) data.mark_code = mark_code;
         if (notes !== undefined) data.notes = notes;
 
-        const actualizado = await prisma.salesOrderDetail.update({
-            where: { detail_id: BigInt(detail_id) },
-            data
+        let actualizado;
+
+        await prisma.$transaction(async (tx) => {
+            // si vienen componentes, reemplaza todo el set
+            if (components !== undefined) {
+                await tx.salesOrderDetailComponent.deleteMany({
+                    where: { detail_id: BigInt(detail_id) }
+                });
+
+                if (components.length > 0) {
+                    const productIds = components.map(c => BigInt(c.component_product_id));
+                    const productos = await tx.product.findMany({
+                        where: { product_id: { in: productIds } }
+                    });
+                    const nombreMap = new Map(productos.map(p => [p.product_id.toString(), p.name]));
+
+                    await tx.salesOrderDetailComponent.createMany({
+                        data: components.map(c => ({
+                            detail_id: BigInt(detail_id),
+                            component_product_id: BigInt(c.component_product_id),
+                            component_variant_id: c.component_variant_id ? BigInt(c.component_variant_id) : null,
+                            product_name_snapshot: nombreMap.get(c.component_product_id.toString()) ?? '',
+                            bunches: c.bunches,
+                            stems_per_bunch: c.stems_per_bunch,
+                        }))
+                    });
+
+                    // sobrescribe los totales calculados arriba con la suma real de componentes
+                    const stems_por_caja   = components.reduce((sum, c) => sum + (c.bunches * c.stems_per_bunch), 0);
+                    const bunches_por_caja = components.reduce((sum, c) => sum + c.bunches, 0);
+
+                    const comp_total_stems   = stems_por_caja * qty;
+                    const comp_total_bunches = bunches_por_caja * qty;
+                    const comp_total_boxes   = qty;
+
+                    let comp_subtotal = 0;
+                    if (billing_unit === 'TALLO') {
+                        comp_subtotal = comp_total_stems * price;
+                    } else if (billing_unit === 'RAMO') {
+                        comp_subtotal = comp_total_bunches * price;
+                    } else if (billing_unit === 'CAJA') {
+                        comp_subtotal = comp_total_boxes * price;
+                    }
+
+                    data.total_stems = comp_total_stems;
+                    data.total_bunches = comp_total_bunches;
+                    data.total_boxes = comp_total_boxes;
+                    data.subtotal = comp_subtotal;
+                }
+            }
+
+            actualizado = await tx.salesOrderDetail.update({
+                where: { detail_id: BigInt(detail_id) },
+                data
+            });
         });
 
         return res.status(200).json({
@@ -703,6 +838,12 @@ const eliminarLinea = async (req, res) => {
                     }
                 });
             }
+
+            // Los componentes del surtido son Restrict, no Cascade, así que hay
+            // que borrarlos antes de eliminar el detalle.
+            await tx.salesOrderDetailComponent.deleteMany({
+                where: { detail_id: BigInt(detail_id) }
+            });
 
             // Eliminar detalle (assignments se borran en cascade)
             await tx.salesOrderDetail.delete({
