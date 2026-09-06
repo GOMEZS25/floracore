@@ -19,14 +19,14 @@ model Role {
 }
 
 model User {
-  user_id       BigInt   @id @default(autoincrement())
-  role_id       Int?
-  full_name     String   @db.VarChar(120)
-  email         String   @unique @db.VarChar(120)
-  password_hash String   @db.VarChar(255)
-  is_active       Boolean  @default(true)
-  is_super_admin  Boolean  @default(false)
-  created_at      DateTime @default(now())
+  user_id        BigInt   @id @default(autoincrement())
+  role_id        Int?
+  full_name      String   @db.VarChar(120)
+  email          String   @unique @db.VarChar(120)
+  password_hash  String   @db.VarChar(255)
+  is_active      Boolean  @default(true)
+  is_super_admin Boolean  @default(false)
+  created_at     DateTime @default(now())
 
   role Role? @relation(fields: [role_id], references: [role_id])
 
@@ -56,7 +56,7 @@ model Category {
   is_active   Boolean  @default(true)
   created_by  BigInt
   created_at  DateTime @default(now())
-  parent_id   BigInt?  // 
+  parent_id   BigInt? // 
 
   parent   Category?  @relation("CategoryHierarchy", fields: [parent_id], references: [category_id], onDelete: Restrict)
   children Category[] @relation("CategoryHierarchy")
@@ -90,13 +90,13 @@ model Packaging {
 }
 
 model Product {
-  product_id      BigInt   @id @default(autoincrement())
-  sku             String   @unique @db.VarChar(40)
-  name            String   @db.VarChar(120)
+  product_id      BigInt      @id @default(autoincrement())
+  sku             String      @unique @db.VarChar(40)
+  name            String      @db.VarChar(120)
   category_id     BigInt
-  unit_of_measure String   @db.VarChar(20)
-  is_active       Boolean  @default(true)
-  created_at      DateTime @default(now())
+  unit_of_measure String      @db.VarChar(20)
+  is_active       Boolean     @default(true)
+  created_at      DateTime    @default(now())
   product_type    ProductType @default(SIMPLE)
 
   weeks_to_cut      Int     @default(0)
@@ -106,13 +106,14 @@ model Product {
   packaging    Packaging? @relation(fields: [packaging_id], references: [packaging_id], onDelete: Restrict)
   category     Category   @relation(fields: [category_id], references: [category_id], onDelete: Restrict)
 
-  lotes               Lote[]
-  forecast_runs       ForecastRun[]
-  stock_thresholds    StockThreshold[]
-  sowing_details      SowingDetail[]
-  projection_details  ProjectionDetail[]
-  sales_order_details SalesOrderDetail[]
-  variants            ProductVariant[]
+  lotes                     Lote[]
+  forecast_runs             ForecastRun[]
+  stock_thresholds          StockThreshold[]
+  sowing_details            SowingDetail[]
+  projection_details        ProjectionDetail[]
+  sales_order_details       SalesOrderDetail[]
+  variants                  ProductVariant[]
+  SalesOrderDetailComponent SalesOrderDetailComponent[]
 
   @@index([name])
   @@index([category_id])
@@ -167,12 +168,12 @@ model Lote {
   year                Int?
 
   product  Product           @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
-  variant ProductVariant?    @relation(fields: [variant_id], references: [variant_id], onDelete: Restrict)
+  variant  ProductVariant?   @relation(fields: [variant_id], references: [variant_id], onDelete: Restrict)
   location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
   user     User              @relation(fields: [created_by], references: [user_id])
 
-  stock_movements StockMovement[]
-  sales_order_details SalesOrderDetail[]
+  stock_movements         StockMovement[]
+  sales_order_details     SalesOrderDetail[]
   sales_order_assignments SalesOrderAssignment[]
 
   @@index([product_id])
@@ -270,9 +271,9 @@ model Sowing {
   created_by         BigInt
   created_at         DateTime     @default(now())
 
-  location InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
-  user     User              @relation(fields: [created_by], references: [user_id])
-  details  SowingDetail[]
+  location    InventoryLocation @relation(fields: [location_id], references: [location_id], onDelete: Restrict)
+  user        User              @relation(fields: [created_by], references: [user_id])
+  details     SowingDetail[]
   projections Projection[]
 
   @@index([location_id])
@@ -474,19 +475,38 @@ model SalesOrderDetail {
   upc             String?       @db.VarChar(14)
   mark_code       String?       @db.VarChar(40)
   created_at      DateTime      @default(now())
+  is_assorted     Boolean       @default(false)
 
-  order   SalesOrder @relation(fields: [order_id], references: [order_id], onDelete: Restrict)
-  lote    Lote?      @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
-  product Product    @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
-  variant ProductVariant? @relation(fields: [variant_id], references: [variant_id], onDelete: Restrict)
+  order       SalesOrder                  @relation(fields: [order_id], references: [order_id], onDelete: Restrict)
+  lote        Lote?                       @relation(fields: [lote_id], references: [lote_id], onDelete: Restrict)
+  product     Product                     @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+  variant     ProductVariant?             @relation(fields: [variant_id], references: [variant_id], onDelete: Restrict)
   assignments SalesOrderAssignment[]
-
-
+  components  SalesOrderDetailComponent[]
 
   @@index([order_id])
   @@index([lote_id])
   @@index([product_id])
   @@map("sales_order_details")
+}
+
+model SalesOrderDetailComponent {
+  component_id          BigInt   @id @default(autoincrement())
+  detail_id             BigInt
+  component_product_id  BigInt
+  component_variant_id  BigInt?
+  product_name_snapshot String   @db.VarChar(150)
+  bunches               Int
+  stems_per_bunch       Int
+  created_at            DateTime @default(now())
+
+  detail            SalesOrderDetail @relation(fields: [detail_id], references: [detail_id], onDelete: Restrict)
+  component_product Product          @relation(fields: [component_product_id], references: [product_id], onDelete: Restrict)
+  component_variant ProductVariant?  @relation(fields: [component_variant_id], references: [variant_id], onDelete: Restrict)
+
+  @@index([detail_id])
+  @@index([component_product_id])
+  @@map("sales_order_detail_components")
 }
 
 model SalesOrderAssignment {
@@ -507,17 +527,17 @@ model SalesOrderAssignment {
 // CLIENTES
 
 model Client {
-  client_id      BigInt       @id @default(autoincrement())
-  code           String       @unique @db.VarChar(20)
-  name           String       @db.VarChar(120)
-  origin         String       @db.VarChar(60)
-  currency       String       @db.VarChar(10)
-  delivery_terms String       @db.VarChar(80)
-  status         ClientStatus @default(ACTIVO)
-  is_active      Boolean      @default(true)
+  client_id               BigInt       @id @default(autoincrement())
+  code                    String       @unique @db.VarChar(20)
+  name                    String       @db.VarChar(120)
+  origin                  String       @db.VarChar(60)
+  currency                String       @db.VarChar(10)
+  delivery_terms          String       @db.VarChar(80)
+  status                  ClientStatus @default(ACTIVO)
+  is_active               Boolean      @default(true)
   transaction_category_id Int?
-  created_by     BigInt
-  created_at     DateTime     @default(now())
+  created_by              BigInt
+  created_at              DateTime     @default(now())
 
   user                 User                 @relation(fields: [created_by], references: [user_id])
   transaction_category TransactionCategory? @relation(fields: [transaction_category_id], references: [category_id], onDelete: Restrict)
@@ -594,13 +614,13 @@ model Attribute {
 }
 
 model AttributeValue {
-  value_id     BigInt  @id @default(autoincrement())
+  value_id     BigInt   @id @default(autoincrement())
   attribute_id BigInt
-  value        String  @db.VarChar(60)
-  is_active    Boolean @default(true)
+  value        String   @db.VarChar(60)
+  is_active    Boolean  @default(true)
   created_at   DateTime @default(now())
 
-  attribute  Attribute              @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade)
+  attribute          Attribute                 @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade)
   variant_attributes ProductVariantAttribute[]
 
   @@index([attribute_id])
@@ -614,10 +634,11 @@ model ProductVariant {
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
 
-  product    Product                  @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
-  attributes ProductVariantAttribute[]
-  lotes      Lote[]
-  sales_order_details SalesOrderDetail[]
+  product                   Product                     @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+  attributes                ProductVariantAttribute[]
+  lotes                     Lote[]
+  sales_order_details       SalesOrderDetail[]
+  SalesOrderDetailComponent SalesOrderDetailComponent[]
 
   @@index([product_id])
   @@map("product_variants")
@@ -666,7 +687,6 @@ model UserPermission {
   @@map("user_permissions")
 }
 
-
 model CompanySettings {
   id                   Int           @id @default(autoincrement())
   inventory_mode       InventoryMode @default(TALLOS)
@@ -678,9 +698,6 @@ model CompanySettings {
 
   @@map("company_settings")
 }
-
-
-
 
 model UserPreference {
   id               BigInt   @id @default(autoincrement())
