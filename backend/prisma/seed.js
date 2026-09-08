@@ -23,8 +23,8 @@ async function main() {
     update: {},
     create: {
       full_name: 'Elkin Santiago Gomez Ramirez',
-      email: "gomezse97@gmail.com",
-      password_hash: await bcrypt.hash('Temp1234', 10),
+      email: "[EMAIL_ADDRESS]",
+      password_hash: await bcrypt.hash('25306254', 10),
       is_active: true,
       created_at: new Date(),
       role_id: 1

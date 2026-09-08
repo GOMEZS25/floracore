@@ -88,7 +88,7 @@ const listarOrdenes = async (req, res) => {
         const pageNum = parseInt(page) || 1;
         const pageSize = parseInt(limit) || 25;
 
-        const [ordenes, total] = await Promise.all([
+        const [ordenes, total, aggregates] = await Promise.all([
             prisma.salesOrder.findMany({
                 where,
                 include: {
@@ -111,12 +111,23 @@ const listarOrdenes = async (req, res) => {
                 take: pageSize,
             }),
             prisma.salesOrder.count({ where }),
+            // An order's total is the sum of its line subtotals: there is no total
+            // column on sales_orders. Reuse the same `where` through the relation so
+            // the grand total always covers every order matching the current filters.
+            prisma.salesOrderDetail.aggregate({
+                where: { order: where },
+                _sum: { subtotal: true },
+            }),
         ]);
+
+        // _sum.subtotal is null when no rows match the filters.
+        const grandTotal = Math.round(Number(aggregates._sum.subtotal ?? 0) * 100) / 100;
 
         return res.status(200).json({
             mensaje: 'Órdenes de venta listadas exitosamente',
             data: ordenes.map(serializeBigInt),
             total,
+            totals: { grandTotal },
         });
 
     } catch (error) {
