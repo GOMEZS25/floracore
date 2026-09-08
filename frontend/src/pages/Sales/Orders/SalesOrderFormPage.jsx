@@ -202,7 +202,10 @@ const SalesOrderFormPage = () => {
     });
   };
 
-  const isReadOnly = orderData?.status === 'CANCELADA';
+  // Solo las órdenes en BORRADOR son editables. El !!orderData deja pasar la
+  // orden nueva (aún sin cargar), que necesita el formulario habilitado para
+  // que el autoguardado pueda crearla.
+  const isReadOnly = !!orderData && orderData.status !== 'BORRADOR';
 
   const headerVals = Form.useWatch([], headerForm) || {};
 
@@ -320,6 +323,19 @@ const SalesOrderFormPage = () => {
     });
   };
 
+  // Revertir un despacho sí mueve inventario, así que lleva Modal.confirm en
+  // vez del Popconfirm liviano que usa la reversa desde CONFIRMADA.
+  const handleRevertDispatchClick = () => {
+    Modal.confirm({
+      title: '¿Devolver la orden a borrador?',
+      icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+      content: 'Esta orden ya fue despachada. Al devolverla a borrador, el inventario despachado volverá a quedar reservado para esta orden y la orden será editable de nuevo.',
+      okText: 'Sí, volver a borrador',
+      cancelText: 'Cancelar',
+      onOk: () => handleChangeStatus('BORRADOR'),
+    });
+  };
+
   const handleCancelDespachadaClick = () => {
     Modal.confirm({
       title: '¿Cancelar una orden ya despachada?',
@@ -430,7 +446,7 @@ const SalesOrderFormPage = () => {
             </Col>
             <Col>
               <Space size={12} align="center">
-                <Button icon={<SaveOutlined />} onClick={handleGuardar}>Guardar</Button>
+                <Button icon={<SaveOutlined />} disabled={isReadOnly} onClick={handleGuardar}>Guardar</Button>
                 <Button
                   icon={<PrinterOutlined />}
                   disabled={!orderData}
@@ -442,6 +458,34 @@ const SalesOrderFormPage = () => {
                     icon={<CheckCircleOutlined />}
                     onClick={() => handleChangeStatus('CONFIRMADA')}
                   >Confirmar orden</Button>
+                )}
+                {status === 'CONFIRMADA' && (
+                  <Popconfirm
+                    title="¿Volver la orden a borrador?"
+                    description="La orden volverá a ser editable. No afecta el inventario."
+                    okText="Sí, volver a borrador"
+                    cancelText="Cancelar"
+                    onConfirm={() => handleChangeStatus('BORRADOR')}
+                  >
+                    <Button icon={<RollbackOutlined />} disabled={loading}>
+                      Volver a borrador
+                    </Button>
+                  </Popconfirm>
+                )}
+                {status === 'CONFIRMADA' && (
+                  <Button
+                    type="primary"
+                    icon={<CarOutlined />}
+                    disabled={loading}
+                    onClick={handleDispatchClick}
+                  >Despachar</Button>
+                )}
+                {status === 'DESPACHADA' && (
+                  <Button
+                    icon={<RollbackOutlined />}
+                    disabled={loading}
+                    onClick={handleRevertDispatchClick}
+                  >Volver a borrador</Button>
                 )}
               </Space>
             </Col>

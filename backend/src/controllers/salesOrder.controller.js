@@ -219,12 +219,115 @@ const obtenerOrden = async (req, res) => {
     }
 };
 
-// Transiciones de estado válidas para órdenes de venta.
-const ALLOWED_ORDER_TRANSITIONS = {
-    BORRADOR: ['CONFIRMADA', 'CANCELADA'],
-    CONFIRMADA: ['BORRADOR', 'DESPACHADA', 'CANCELADA'],
-    DESPACHADA: ['CANCELADA'],
-    CANCELADA: []
+// Efectos de inventario de las transiciones. Cada uno corre dentro de la misma
+// transacción que actualiza el status, así que reciben el cliente `tx`.
+
+// Descuenta reservada (disponible ya se descontó al asignar).
+const ejecutarDespacho = async (tx, orden, userId) => {
+    for (const detail of orden.details) {
+        for (const asgn of detail.assignments) {
+            await tx.lote.update({
+                where: { lote_id: asgn.lote_id },
+                data: { cantidad_reservada: { decrement: asgn.quantity } }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    lote_id: asgn.lote_id,
+                    movement_type: 'VENTA',
+                    quantity: asgn.quantity,
+                    notes: `Despacho orden #${orden.order_number}`,
+                    created_by: BigInt(userId)
+                }
+            });
+        }
+    }
+};
+
+// La reserva seguía activa, se libera por completo.
+const liberarReserva = async (tx, orden, userId) => {
+    for (const detail of orden.details) {
+        for (const asgn of detail.assignments) {
+            await tx.lote.update({
+                where: { lote_id: asgn.lote_id },
+                data: {
+                    cantidad_reservada: { decrement: asgn.quantity },
+                    cantidad_disponible: { increment: asgn.quantity }
+                }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    lote_id: asgn.lote_id,
+                    movement_type: 'CANCELACION',
+                    quantity: asgn.quantity,
+                    notes: `Cancelación orden #${orden.order_number}`,
+                    created_by: BigInt(userId)
+                }
+            });
+        }
+    }
+};
+
+// La reservada ya se había descontado al despachar, solo se devuelve a
+// disponible (equivale a revertir la venta).
+// TODO: restrict to users with a specific permission
+const devolverAStock = async (tx, orden, userId) => {
+    for (const detail of orden.details) {
+        for (const asgn of detail.assignments) {
+            await tx.lote.update({
+                where: { lote_id: asgn.lote_id },
+                data: { cantidad_disponible: { increment: asgn.quantity } }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    lote_id: asgn.lote_id,
+                    movement_type: 'CANCELACION',
+                    quantity: asgn.quantity,
+                    notes: `Cancelación de orden despachada #${orden.order_number}`,
+                    created_by: BigInt(userId)
+                }
+            });
+        }
+    }
+};
+
+// Inversa de ejecutarDespacho: devuelve la reservada que el despacho consumió.
+// disponible no se toca porque el despacho tampoco lo tocó (se descontó al
+// asignar). El movimiento de VENTA original se conserva y este AJUSTE lo
+// compensa: el historial de inventario es aditivo, nunca se reescribe.
+const revertirDespacho = async (tx, orden, userId) => {
+    for (const detail of orden.details) {
+        for (const asgn of detail.assignments) {
+            await tx.lote.update({
+                where: { lote_id: asgn.lote_id },
+                data: { cantidad_reservada: { increment: asgn.quantity } }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    lote_id: asgn.lote_id,
+                    movement_type: 'AJUSTE',
+                    quantity: asgn.quantity,
+                    notes: `Reversa de despacho orden #${orden.order_number}`,
+                    created_by: BigInt(userId)
+                }
+            });
+        }
+    }
+};
+
+// Única fuente de verdad de los estados: la clave define qué transición es
+// válida y el valor qué efecto de inventario aplica. null = sin efecto.
+const TRANSICIONES = {
+    'BORRADOR->CONFIRMADA':   null,
+    'BORRADOR->CANCELADA':    liberarReserva,
+    'CONFIRMADA->BORRADOR':   null,
+    'CONFIRMADA->DESPACHADA': ejecutarDespacho,
+    'CONFIRMADA->CANCELADA':  liberarReserva,
+    'DESPACHADA->CANCELADA':  devolverAStock,
+    'DESPACHADA->BORRADOR':   revertirDespacho,
 };
 
 // Cambiar estado de una orden - endpoint único para todas las transiciones
@@ -247,13 +350,15 @@ const cambiarEstadoOrden = async (req, res) => {
         }
 
         const estadoActual = orden.status;
-        const permitidos = ALLOWED_ORDER_TRANSITIONS[estadoActual] || [];
+        const arista = `${estadoActual}->${nuevoEstado}`;
 
-        if (!permitidos.includes(nuevoEstado)) {
+        if (!(arista in TRANSICIONES)) {
             return res.status(400).json({
                 mensaje: `No se puede pasar de ${estadoActual} a ${nuevoEstado}`
             });
         }
+
+        const efecto = TRANSICIONES[arista];
 
         if (nuevoEstado === 'CONFIRMADA' && (!orden.details || orden.details.length === 0)) {
             return res.status(400).json({ mensaje: 'La orden no tiene líneas asociadas' });
@@ -267,78 +372,9 @@ const cambiarEstadoOrden = async (req, res) => {
                 data: { status: nuevoEstado }
             });
 
-            // CONFIRMADA -> DESPACHADA: descuenta reservada (disponible ya se descontó al asignar)
-            if (estadoActual === 'CONFIRMADA' && nuevoEstado === 'DESPACHADA') {
-                for (const detail of orden.details) {
-                    for (const asgn of detail.assignments) {
-                        await tx.lote.update({
-                            where: { lote_id: asgn.lote_id },
-                            data: { cantidad_reservada: { decrement: asgn.quantity } }
-                        });
-
-                        await tx.stockMovement.create({
-                            data: {
-                                lote_id: asgn.lote_id,
-                                movement_type: 'VENTA',
-                                quantity: asgn.quantity,
-                                notes: `Despacho orden #${orden.order_number}`,
-                                created_by: BigInt(req.usuario.id)
-                            }
-                        });
-                    }
-                }
+            if (efecto) {
+                await efecto(tx, orden, req.usuario.id);
             }
-
-            // BORRADOR|CONFIRMADA -> CANCELADA: la reserva seguía activa, se libera por completo
-            if ((estadoActual === 'BORRADOR' || estadoActual === 'CONFIRMADA') && nuevoEstado === 'CANCELADA') {
-                for (const detail of orden.details) {
-                    for (const asgn of detail.assignments) {
-                        await tx.lote.update({
-                            where: { lote_id: asgn.lote_id },
-                            data: {
-                                cantidad_reservada: { decrement: asgn.quantity },
-                                cantidad_disponible: { increment: asgn.quantity }
-                            }
-                        });
-
-                        await tx.stockMovement.create({
-                            data: {
-                                lote_id: asgn.lote_id,
-                                movement_type: 'CANCELACION',
-                                quantity: asgn.quantity,
-                                notes: `Cancelación orden #${orden.order_number}`,
-                                created_by: BigInt(req.usuario.id)
-                            }
-                        });
-                    }
-                }
-            }
-
-            // DESPACHADA -> CANCELADA: la reservada ya se había descontado al despachar,
-            // solo se devuelve a disponible (equivale a revertir la venta).
-            // TODO: restrict to users with a specific permission
-            if (estadoActual === 'DESPACHADA' && nuevoEstado === 'CANCELADA') {
-                for (const detail of orden.details) {
-                    for (const asgn of detail.assignments) {
-                        await tx.lote.update({
-                            where: { lote_id: asgn.lote_id },
-                            data: { cantidad_disponible: { increment: asgn.quantity } }
-                        });
-
-                        await tx.stockMovement.create({
-                            data: {
-                                lote_id: asgn.lote_id,
-                                movement_type: 'CANCELACION',
-                                quantity: asgn.quantity,
-                                notes: `Cancelación de orden despachada #${orden.order_number}`,
-                                created_by: BigInt(req.usuario.id)
-                            }
-                        });
-                    }
-                }
-            }
-
-            // CONFIRMADA -> BORRADOR: solo cambia el status, no afecta inventario ni assignments
         });
 
         return res.status(200).json({
