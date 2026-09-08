@@ -15,6 +15,7 @@ import salesService from '../../../services/salesService';
 import useTablePreferences from '../../../hooks/useTablePreferences';
 import TableConfigDrawer from '../../../components/TableConfig/TableConfigDrawer';
 import { formatOrderNumber } from '../../../utils/orderNumber';
+import { formatMoney } from './orderFormHelpers';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -49,6 +50,7 @@ const SalesOrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [grandTotal, setGrandTotal] = useState(0);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -83,10 +85,13 @@ const SalesOrdersPage = () => {
 
       const response = await salesService.listarOrdenes(params);
       const data = response?.data?.data || response?.data || response || [];
-      const total = response?.data?.total || data.length;
+      const total = response?.total ?? data.length;
+      // Sum of every order matching the current filters, not just this page.
+      const grand = Number(response?.totals?.grandTotal) || 0;
 
       setOrders(data);
       setTotalRecords(total);
+      setGrandTotal(grand);
     } catch (error) {
       notification.error({ message: 'Error', description: 'No se pudieron cargar las órdenes.' });
     } finally {
@@ -303,6 +308,22 @@ const SalesOrdersPage = () => {
       fixed: pinnedColumns.has(c.key) ? 'left' : undefined,
     }));
 
+  // Walk the same visible columns the Table receives, so the value stays under the
+  // Total column whatever the user hides or reorders in "Configurar Vista".
+  const renderSummary = () => (
+    <Table.Summary>
+      <Table.Summary.Row>
+        {columns.map((col, index) => (
+          <Table.Summary.Cell key={col.key} index={index}>
+            {col.key === 'total'
+              ? <Text strong>{formatMoney(grandTotal)}</Text>
+              : (index === 0 ? <Text>Total general</Text> : null)}
+          </Table.Summary.Cell>
+        ))}
+      </Table.Summary.Row>
+    </Table.Summary>
+  );
+
   return (
     <div style={{ padding: '24px' }}>
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
@@ -389,6 +410,7 @@ const SalesOrdersPage = () => {
         rowKey={(record) => record.order_id}
         loading={loading}
         scroll={{ x: 1000 }}
+        summary={renderSummary}
         pagination={{
           current: pagination.current,
           pageSize: pagination.pageSize,
