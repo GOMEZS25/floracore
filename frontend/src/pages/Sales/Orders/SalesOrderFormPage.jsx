@@ -459,6 +459,14 @@ const SalesOrderFormPage = () => {
                     </Button>
                   </Popconfirm>
                 )}
+                {status === 'CONFIRMADA' && (
+                  <Button
+                    type="primary"
+                    icon={<CarOutlined />}
+                    disabled={loading}
+                    onClick={handleDispatchClick}
+                  >Despachar</Button>
+                )}
               </Space>
             </Col>
           </Row>
