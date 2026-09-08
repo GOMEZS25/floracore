@@ -323,6 +323,19 @@ const SalesOrderFormPage = () => {
     });
   };
 
+  // Revertir un despacho sí mueve inventario, así que lleva Modal.confirm en
+  // vez del Popconfirm liviano que usa la reversa desde CONFIRMADA.
+  const handleRevertDispatchClick = () => {
+    Modal.confirm({
+      title: '¿Devolver la orden a borrador?',
+      icon: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
+      content: 'Esta orden ya fue despachada. Al devolverla a borrador, el inventario despachado volverá a quedar reservado para esta orden y la orden será editable de nuevo.',
+      okText: 'Sí, volver a borrador',
+      cancelText: 'Cancelar',
+      onOk: () => handleChangeStatus('BORRADOR'),
+    });
+  };
+
   const handleCancelDespachadaClick = () => {
     Modal.confirm({
       title: '¿Cancelar una orden ya despachada?',
@@ -466,6 +479,13 @@ const SalesOrderFormPage = () => {
                     disabled={loading}
                     onClick={handleDispatchClick}
                   >Despachar</Button>
+                )}
+                {status === 'DESPACHADA' && (
+                  <Button
+                    icon={<RollbackOutlined />}
+                    disabled={loading}
+                    onClick={handleRevertDispatchClick}
+                  >Volver a borrador</Button>
                 )}
               </Space>
             </Col>

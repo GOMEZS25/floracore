@@ -293,6 +293,31 @@ const devolverAStock = async (tx, orden, userId) => {
     }
 };
 
+// Inversa de ejecutarDespacho: devuelve la reservada que el despacho consumió.
+// disponible no se toca porque el despacho tampoco lo tocó (se descontó al
+// asignar). El movimiento de VENTA original se conserva y este AJUSTE lo
+// compensa: el historial de inventario es aditivo, nunca se reescribe.
+const revertirDespacho = async (tx, orden, userId) => {
+    for (const detail of orden.details) {
+        for (const asgn of detail.assignments) {
+            await tx.lote.update({
+                where: { lote_id: asgn.lote_id },
+                data: { cantidad_reservada: { increment: asgn.quantity } }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    lote_id: asgn.lote_id,
+                    movement_type: 'AJUSTE',
+                    quantity: asgn.quantity,
+                    notes: `Reversa de despacho orden #${orden.order_number}`,
+                    created_by: BigInt(userId)
+                }
+            });
+        }
+    }
+};
+
 // Única fuente de verdad de los estados: la clave define qué transición es
 // válida y el valor qué efecto de inventario aplica. null = sin efecto.
 const TRANSICIONES = {
@@ -302,6 +327,7 @@ const TRANSICIONES = {
     'CONFIRMADA->DESPACHADA': ejecutarDespacho,
     'CONFIRMADA->CANCELADA':  liberarReserva,
     'DESPACHADA->CANCELADA':  devolverAStock,
+    'DESPACHADA->BORRADOR':   revertirDespacho,
 };
 
 // Cambiar estado de una orden - endpoint único para todas las transiciones
