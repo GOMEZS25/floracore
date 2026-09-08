@@ -202,7 +202,10 @@ const SalesOrderFormPage = () => {
     });
   };
 
-  const isReadOnly = orderData?.status === 'CANCELADA';
+  // Solo las órdenes en BORRADOR son editables. El !!orderData deja pasar la
+  // orden nueva (aún sin cargar), que necesita el formulario habilitado para
+  // que el autoguardado pueda crearla.
+  const isReadOnly = !!orderData && orderData.status !== 'BORRADOR';
 
   const headerVals = Form.useWatch([], headerForm) || {};
 
@@ -430,7 +433,7 @@ const SalesOrderFormPage = () => {
             </Col>
             <Col>
               <Space size={12} align="center">
-                <Button icon={<SaveOutlined />} onClick={handleGuardar}>Guardar</Button>
+                <Button icon={<SaveOutlined />} disabled={isReadOnly} onClick={handleGuardar}>Guardar</Button>
                 <Button
                   icon={<PrinterOutlined />}
                   disabled={!orderData}
