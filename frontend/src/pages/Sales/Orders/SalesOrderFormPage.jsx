@@ -19,7 +19,7 @@ import * as productService from '../../../services/productService';
 import ReservationModal from './ReservationModal';
 import AssignInventoryModal from './AssignInventoryModal';
 import InlineLinesTable from './InlineLinesTable';
-import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
+import { formatMoney } from './orderFormHelpers';
 import { formatOrderNumber } from '../../../utils/orderNumber';
 import './SalesOrderForm.css';
 
@@ -372,7 +372,6 @@ const SalesOrderFormPage = () => {
   ) / 100;
   const totalTallos = orderLines.reduce((acc, l) => acc + (Number(l.total_stems) || 0), 0);
   const totalLineas = orderLines.length;
-  const formatCurrency = (n) => `${getCurrencySymbol(clientCurrency)} ${formatMoney(n)}`;
   const status = orderData?.status;
   const isDraft = status === 'BORRADOR';
 
@@ -575,7 +574,7 @@ const SalesOrderFormPage = () => {
                 fontSize: 14,
               }}>
                 <span>Subtotal</span>
-                <span>{formatCurrency(totalAmount)}</span>
+                <span>{formatMoney(totalAmount, clientCurrency)}</span>
               </div>
 
               <div style={{
@@ -592,7 +591,7 @@ const SalesOrderFormPage = () => {
               }}>
                 <span style={{ fontSize: 16, fontWeight: 600 }}>Total</span>
                 <span style={{ fontSize: 22, fontWeight: 700 }}>
-                  {formatCurrency(totalAmount)}
+                  {formatMoney(totalAmount, clientCurrency)}
                 </span>
               </div>
 

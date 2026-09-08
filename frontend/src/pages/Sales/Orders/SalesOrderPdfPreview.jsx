@@ -2,7 +2,7 @@ import { Document, Page, Text, View, PDFViewer, StyleSheet } from '@react-pdf/re
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 
-import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
+import { getCurrencySymbol, formatNumber, formatMoney } from './orderFormHelpers';
 import { formatOrderNumber } from '../../../utils/orderNumber';
 
 dayjs.extend(isoWeek);
@@ -160,6 +160,8 @@ export const SalesOrderPdfDocument = ({ order }) => {
   const address = order?.client_address || {};
   const lines = order?.details || [];
 
+  // Body cells carry no symbol, so the column titles declare the document
+  // currency once for the export clients that read this PDF.
   const currencySymbol = getCurrencySymbol(client.currency);
   const isDraft = order?.status === 'BORRADOR';
   // The FITO block is always rendered: an empty note shows the label with a blank value.
@@ -217,8 +219,8 @@ export const SalesOrderPdfDocument = ({ order }) => {
           <Text style={styles.colBunches}>Ramos</Text>
           <Text style={styles.colStemsBunch}>Tallos/ramo</Text>
           <Text style={styles.colStems}>Total tallos</Text>
-          <Text style={styles.colPrice}>Precio</Text>
-          <Text style={styles.colValue}>Valor</Text>
+          <Text style={styles.colPrice}>Precio ({currencySymbol})</Text>
+          <Text style={styles.colValue}>Valor ({currencySymbol})</Text>
         </View>
 
         {/* The parent line and its breakdown share one wrap={false} group, so an
@@ -236,9 +238,9 @@ export const SalesOrderPdfDocument = ({ order }) => {
                 <Text style={styles.colStemsBunch}>{formatCount(line.stems_per_bunch)}</Text>
                 <Text style={styles.colStems}>{formatCount(line.total_stems)}</Text>
                 <Text style={styles.colPrice}>
-                  {formatMoney(line.unit_price)} /{orEmpty(line.billing_unit)}
+                  {formatNumber(line.unit_price)} /{orEmpty(line.billing_unit)}
                 </Text>
-                <Text style={styles.colValue}>{formatMoney(line.subtotal)}</Text>
+                <Text style={styles.colValue}>{formatNumber(line.subtotal)}</Text>
               </View>
 
               {components.length > 0 && (
@@ -271,7 +273,7 @@ export const SalesOrderPdfDocument = ({ order }) => {
         <View style={styles.totalsBox}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>{currencySymbol} {formatMoney(totalAmount)}</Text>
+            <Text style={styles.totalValue}>{formatMoney(totalAmount, client.currency)}</Text>
           </View>
           <Text style={styles.totalsSummary}>
             {totalStems.toLocaleString('es-CO')} tallos · {totalBoxes.toLocaleString('es-CO')} cajas

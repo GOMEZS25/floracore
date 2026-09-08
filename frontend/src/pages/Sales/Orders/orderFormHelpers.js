@@ -8,13 +8,21 @@ export const buildLotLabel = (lote) => {
 };
 
 export const getCurrencySymbol = (currency) => {
-  if (currency === 'USD') return 'USD';
+  if (currency === 'USD') return 'US$';
   if (currency === 'EUR') return '€';
   return '$';
 };
 
-export const formatMoney = (value) =>
+// Number only ("1.234,56"): dot thousands, comma decimals, always 2 decimals.
+// Use it where the currency is already declared elsewhere, such as the body of
+// the PDF table.
+export const formatNumber = (value) =>
   new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0);
+
+// Single source for money shown to the user ("US$ 1.234,56"). The symbol lives
+// here, never in the JSX of the callers.
+export const formatMoney = (value, currency) =>
+  `${getCurrencySymbol(currency)} ${formatNumber(value)}`;
 
 export const getAssignmentSummary = (detail) => {
   const total = Number(detail.total_stems) || 0;

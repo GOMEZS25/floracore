@@ -15,6 +15,7 @@ import salesService from '../../../services/salesService';
 import useTablePreferences from '../../../hooks/useTablePreferences';
 import TableConfigDrawer from '../../../components/TableConfig/TableConfigDrawer';
 import { formatOrderNumber } from '../../../utils/orderNumber';
+import { formatMoney } from './orderFormHelpers';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -215,7 +216,7 @@ const SalesOrdersPage = () => {
       render: (_, record) => {
         const total = calculateTotal(record);
         const currency = record.client?.currency || 'COP';
-        return <Text strong>{new Intl.NumberFormat('es-CO', { style: 'currency', currency }).format(total)}</Text>;
+        return <Text strong>{formatMoney(total, currency)}</Text>;
       }
     },
     {
