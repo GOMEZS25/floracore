@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
   Form, Select, DatePicker, Input, Button,
   Typography, Row, Col, Card, Spin, notification, Popconfirm, Modal,
-  Space, Tag, Tooltip
+  Space, Tag
 } from 'antd';
 import {
   ArrowLeftOutlined, PlusOutlined,
@@ -22,6 +22,10 @@ import InlineLinesTable from './InlineLinesTable';
 import { getCurrencySymbol, formatMoney } from './orderFormHelpers';
 import { formatOrderNumber } from '../../../utils/orderNumber';
 import './SalesOrderForm.css';
+
+// Loaded on demand: @react-pdf/renderer weighs several hundred KB and must stay
+// out of the initial bundle.
+const SalesOrderPdfPreview = lazy(() => import('./SalesOrderPdfPreview'));
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -49,6 +53,8 @@ const SalesOrderFormPage = () => {
   const [assigningDetail, setAssigningDetail] = useState(null);
 
   const [reservationDetailId, setReservationDetailId] = useState(null);
+
+  const [pdfOpen, setPdfOpen] = useState(false);
 
   const [clients, setClients] = useState([]);
   const [clientAddresses, setClientAddresses] = useState([]);
@@ -426,9 +432,11 @@ const SalesOrderFormPage = () => {
             <Col>
               <Space size={12} align="center">
                 <Button icon={<SaveOutlined />} onClick={handleGuardar}>Guardar</Button>
-                <Tooltip title="Próximamente">
-                  <Button icon={<PrinterOutlined />} disabled>Imprimir</Button>
-                </Tooltip>
+                <Button
+                  icon={<PrinterOutlined />}
+                  disabled={!orderData}
+                  onClick={() => setPdfOpen(true)}
+                >Imprimir</Button>
                 {status === 'BORRADOR' && orderLines.length > 0 && (
                   <Button
                     type="primary"
@@ -625,6 +633,21 @@ const SalesOrderFormPage = () => {
         isDraft={isDraft}
         onRelease={handleReleaseAssignment}
       />
+
+      <Modal
+        open={pdfOpen}
+        onCancel={() => setPdfOpen(false)}
+        footer={null}
+        width={900}
+        destroyOnHidden
+        title={orderData ? `Orden ${formatOrderNumber(orderData.order_number)}` : 'Orden de venta'}
+      >
+        {pdfOpen && orderData && (
+          <Suspense fallback={<div style={{ padding: 48, textAlign: 'center' }}><Spin /></div>}>
+            <SalesOrderPdfPreview order={orderData} />
+          </Suspense>
+        )}
+      </Modal>
 
     </Spin>
   );
