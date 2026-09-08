@@ -443,6 +443,19 @@ const SalesOrderFormPage = () => {
                     onClick={() => handleChangeStatus('CONFIRMADA')}
                   >Confirmar orden</Button>
                 )}
+                {status === 'CONFIRMADA' && (
+                  <Popconfirm
+                    title="¿Volver la orden a borrador?"
+                    description="La orden volverá a ser editable. No afecta el inventario."
+                    okText="Sí, volver a borrador"
+                    cancelText="Cancelar"
+                    onConfirm={() => handleChangeStatus('BORRADOR')}
+                  >
+                    <Button icon={<RollbackOutlined />} disabled={loading}>
+                      Volver a borrador
+                    </Button>
+                  </Popconfirm>
+                )}
               </Space>
             </Col>
           </Row>
