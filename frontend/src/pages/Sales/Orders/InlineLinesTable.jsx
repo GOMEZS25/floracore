@@ -461,7 +461,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
     {
       title: 'SUBTOTAL',
       key: 'subtotal',
-      render: (_, r) => <Text strong>{getCurrencySymbol(clientCurrency)} {formatMoney(r.subtotal)}</Text>,
+      render: (_, r) => <Text strong>{formatMoney(r.subtotal, clientCurrency)}</Text>,
       width: 130,
       align: 'right',
     },
@@ -784,7 +784,7 @@ const InlineLinesTable = ({ orderId, orderLines, allProducts, clientCurrency, is
                 fontWeight: 500,
                 color: 'var(--fc-accent)',
                 fontVariantNumeric: 'tabular-nums',
-              }}>{getCurrencySymbol(clientCurrency)} {formatMoney(subtotalEstimado)}</div>
+              }}>{formatMoney(subtotalEstimado, clientCurrency)}</div>
             </div>
           </div>
         </div>
