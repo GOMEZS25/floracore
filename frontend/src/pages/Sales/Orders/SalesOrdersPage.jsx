@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Table, Button, Input, Select, DatePicker,
-  notification, Popconfirm, Typography, Tag, Space, Row, Col, Card, Tooltip
+  notification, Typography, Tag, Space, Row, Col, Card, Tooltip
 } from 'antd';
 import {
-  SearchOutlined, PlusOutlined, EyeOutlined,
-  CheckCircleOutlined, CarOutlined, CloseCircleOutlined, SettingOutlined
+  SearchOutlined, PlusOutlined, EyeOutlined, SettingOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -129,45 +128,6 @@ const SalesOrdersPage = () => {
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
-  const handleApprove = async (id) => {
-    try {
-      await salesService.cambiarEstadoOrden(id, 'CONFIRMADA');
-      notification.success({ message: 'Orden confirmada con éxito' });
-      fetchOrders();
-    } catch (error) {
-      notification.error({
-        message: 'Error al confirmar',
-        description: error.response?.data?.mensaje || 'No se pudo confirmar la orden.'
-      });
-    }
-  };
-
-  const handleDispatch = async (id) => {
-    try {
-      await salesService.cambiarEstadoOrden(id, 'DESPACHADA');
-      notification.success({ message: 'Orden despachada con éxito' });
-      fetchOrders();
-    } catch (error) {
-      notification.error({
-        message: 'Error al despachar',
-        description: error.response?.data?.mensaje || 'No se pudo despachar la orden.'
-      });
-    }
-  };
-
-  const handleCancel = async (id) => {
-    try {
-      await salesService.cambiarEstadoOrden(id, 'CANCELADA');
-      notification.success({ message: 'Orden cancelada' });
-      fetchOrders();
-    } catch (error) {
-      notification.error({
-        message: 'Error al cancelar',
-        description: error.response?.data?.mensaje || 'No se pudo cancelar la orden.'
-      });
-    }
-  };
-
   const calculateTotal = (record) => {
     if (!record.details || !Array.isArray(record.details)) return 0;
     return record.details.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
@@ -244,6 +204,7 @@ const SalesOrdersPage = () => {
       key: 'transaction_category',
       render: (_, record) => record.transaction_category?.name || '-'
     },
+
     {
       title: 'Acciones',
       key: 'actions',
@@ -257,45 +218,6 @@ const SalesOrdersPage = () => {
               style={{ borderColor: '#d9d9d9', color: 'var(--fc-accent)' }}
             />
           </Tooltip>
-
-          {record.status === 'BORRADOR' && (
-            <Tooltip title="Confirmar orden">
-              <Popconfirm
-                title="¿Confirmar orden?"
-                onConfirm={() => handleApprove(record.order_id)}
-                okText="Sí"
-                cancelText="No"
-              >
-                <Button size="small" icon={<CheckCircleOutlined />} style={{ color: '#1890ff', borderColor: '#1890ff' }} />
-              </Popconfirm>
-            </Tooltip>
-          )}
-
-          {record.status === 'CONFIRMADA' && (
-            <Tooltip title="Despachar Orden">
-              <Popconfirm
-                title="¿Despachar esta orden? Se moverá el inventario permanentemente."
-                onConfirm={() => handleDispatch(record.order_id)}
-                okText="Sí"
-                cancelText="No"
-              >
-                <Button size="small" icon={<CarOutlined />} style={{ color: '#52c41a', borderColor: '#52c41a' }} />
-              </Popconfirm>
-            </Tooltip>
-          )}
-
-          {(record.status === 'BORRADOR' || record.status === 'CONFIRMADA') && (
-            <Tooltip title="Cancelar Orden">
-              <Popconfirm
-                title="¿Cancelar esta orden? Esta acción no se puede deshacer."
-                onConfirm={() => handleCancel(record.order_id)}
-                okText="Sí"
-                cancelText="No"
-              >
-                <Button size="small" danger icon={<CloseCircleOutlined />} />
-              </Popconfirm>
-            </Tooltip>
-          )}
         </Space>
       )
     }
