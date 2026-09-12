@@ -323,6 +323,18 @@ const SalesOrderFormPage = () => {
     });
   };
 
+  const handleCancelClick = () => {
+    Modal.confirm({
+      title: '¿Cancelar esta orden?',
+      icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+      content: 'El inventario reservado volverá a quedar disponible.',
+      okText: 'Sí, cancelar orden',
+      okType: 'danger',
+      cancelText: 'Volver',
+      onOk: () => handleChangeStatus('CANCELADA'),
+    });
+  };
+
   // Revertir un despacho sí mueve inventario, así que lleva Modal.confirm en
   // vez del Popconfirm liviano que usa la reversa desde CONFIRMADA.
   const handleRevertDispatchClick = () => {
@@ -486,6 +498,14 @@ const SalesOrderFormPage = () => {
                     disabled={loading}
                     onClick={handleRevertDispatchClick}
                   >Volver a borrador</Button>
+                )}
+                {(status === 'BORRADOR' || status === 'CONFIRMADA') && (
+                  <Button
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    disabled={loading}
+                    onClick={handleCancelClick}
+                  >Cancelar orden</Button>
                 )}
               </Space>
             </Col>
